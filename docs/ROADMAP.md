@@ -46,7 +46,7 @@
 
 ## Fase 2 — Automatización / analítica
 Diseño detallado en `docs/FASE2_DISENO.md`.
-- [ ] Alias de producto (`product_aliases`) + resolución en atribución.
+- [x] Alias de producto (`product_aliases` + `resolve_sku()`) + resolución en import de ventas.
 - [ ] Staging + adaptador de ingesta del POS/ERP (pull programado).
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.

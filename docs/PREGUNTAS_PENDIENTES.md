@@ -32,3 +32,6 @@
   lectura) y editable con +/−. La resolución de producto acepta **SKU o EAN** contra el catálogo cacheado.
   Archivo: `mobile/app/src/main/java/com/rack/ui/ScanViewModel.kt`.
 - **2026-06-25** — Falta generar el **Gradle wrapper** (`gradlew`) en un entorno con Gradle; ver `mobile/README.md`.
+- **2026-06-25** — Fase 2: los **alias de producto** se resuelven en el **import de ventas** (no en `attribute_sales`),
+  agregando duplicados que colapsan al mismo SKU. Confirmar reglas de alias del POS. Archivos:
+  `supabase/migrations/0006_product_aliases.sql`, `web/src/app/(dashboard)/import/actions.ts`.

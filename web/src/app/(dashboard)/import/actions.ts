@@ -64,8 +64,29 @@ export async function importCatalog(rows: CatalogRow[]) {
   return { ok: rows.length };
 }
 
-export async function importSales(storeId: string, week: string, rows: SalesRow[]) {
+// Resuelve códigos del POS a SKU canónico (Fase 2) y agrega duplicados que colapsan
+// al mismo SKU sumando unidades e importe.
+async function resolveAndAggregate(rows: SalesRow[]): Promise<SalesRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.from('product_aliases').select('alias, sku');
+  const aliasMap = new Map((data ?? []).map((a) => [a.alias as string, a.sku as string]));
+  const agg = new Map<string, SalesRow>();
+  for (const r of rows) {
+    const sku = aliasMap.get(r.sku) ?? r.sku;
+    const prev = agg.get(sku);
+    if (prev) {
+      prev.units += r.units;
+      prev.amount += r.amount;
+    } else {
+      agg.set(sku, { sku, units: r.units, amount: r.amount });
+    }
+  }
+  return [...agg.values()];
+}
+
+export async function importSales(storeId: string, week: string, rawRows: SalesRow[]) {
   const uid = await assertAdmin();
+  const rows = await resolveAndAggregate(rawRows);
   await upsertChunked(
     'sales',
     rows.map((r) => ({ store_id: storeId, week, ...r })),
