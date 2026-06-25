@@ -9,9 +9,12 @@ export default function FixturesPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [barcode, setBarcode] = useState('');
+  const [floor, setFloor] = useState(1);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const selectedStore = stores.find((s) => s.id === storeId);
+  const floorCount = selectedStore?.floors ?? 1;
 
   useEffect(() => {
     supabase
@@ -39,15 +42,20 @@ export default function FixturesPage() {
     load();
   }, [load]);
 
+  // Si cambia la tienda y el piso elegido no existe, volver al piso 1.
+  useEffect(() => {
+    if (floor > floorCount) setFloor(1);
+  }, [floorCount, floor]);
+
   async function addFixture(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // El código (barcode) lo genera la base: códigoTienda + piso + 4 dígitos.
     const { error } = await supabase
       .from('fixtures')
-      .insert({ store_id: storeId, barcode, name });
+      .insert({ store_id: storeId, floor, name });
     if (error) setError(error.message);
     else {
-      setBarcode('');
       setName('');
       load();
     }
@@ -81,14 +89,26 @@ export default function FixturesPage() {
       </div>
 
       <form className="panel row" onSubmit={addFixture} style={{ marginBottom: 16 }}>
+        <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Piso
+          <select value={floor} onChange={(e) => setFloor(Number(e.target.value))}>
+            {Array.from({ length: floorCount }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
         <input
-          placeholder="Código de barras"
-          value={barcode}
-          onChange={(e) => setBarcode(e.target.value)}
+          placeholder="Nombre del mueble"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
         />
-        <input placeholder="Nombre del mueble" value={name} onChange={(e) => setName(e.target.value)} required />
         <button disabled={!storeId}>Agregar</button>
+        <span className="muted" style={{ fontSize: 13 }}>
+          Código: <b>{selectedStore ? `${selectedStore.code}${floor}####` : '—'}</b> (automático)
+        </span>
         {error && <span className="neg">{error}</span>}
       </form>
 
@@ -96,6 +116,7 @@ export default function FixturesPage() {
         <thead>
           <tr>
             <th>Código</th>
+            <th>Piso</th>
             <th>Nombre</th>
             <th>Pin</th>
             <th>Estado</th>
@@ -105,7 +126,8 @@ export default function FixturesPage() {
         <tbody>
           {fixtures.map((f) => (
             <tr key={f.id}>
-              <td>{f.barcode}</td>
+              <td><code>{f.barcode}</code></td>
+              <td>{f.floor}</td>
               <td>{f.name}</td>
               <td className="muted">
                 {f.pin_x != null ? `${f.pin_x.toFixed(2)}, ${f.pin_y?.toFixed(2)}` : 'sin ubicar'}
@@ -123,7 +145,7 @@ export default function FixturesPage() {
           ))}
           {fixtures.length === 0 && (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={6} className="muted">
                 Sin muebles en esta tienda. Ubicalos en el plano desde la sección Plano.
               </td>
             </tr>
