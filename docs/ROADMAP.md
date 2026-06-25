@@ -17,11 +17,13 @@
 - [x] Heatmap sobre el plano.
 
 **App Android**
+- [x] Andamiaje Gradle (Compose, Room, WorkManager, OkHttp).
+- [x] Persistencia offline (Room): entidades, DAO, base.
+- [x] Integración scanner Honeywell (intents) + fallback wedge (`ScannerProvider`).
+- [x] Utilidad de semana ISO (espejo de web/SQL) + test.
 - [ ] Login (Supabase Auth).
-- [ ] Escaneo de mueble + conteo de cantidades por SKU.
-- [ ] Persistencia offline (Room).
-- [ ] Sincronización (WorkManager).
-- [ ] Integración scanner Honeywell (intents) + fallback wedge.
+- [ ] Escaneo de mueble + conteo de cantidades por SKU (UI).
+- [ ] Sincronización (WorkManager) + cliente REST a Supabase.
 
 **Backend**
 - [x] `attribute_sales` (regla "primer mueble").

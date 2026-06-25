@@ -23,3 +23,8 @@
 - **2026-06-25** — Plano: bucket de Storage **`layouts` público** (lectura), escritura admin/visual. El pin se
   ubica con **clic sobre la imagen** (coordenadas normalizadas). Archivos: `supabase/migrations/0003_storage.sql`,
   `web/src/app/(dashboard)/layout/page.tsx`.
+- **2026-06-25** — Android: `minSdk = 24` (Android 7+) para cubrir equipos Honeywell antiguos. Archivo:
+  `mobile/app/build.gradle.kts`.
+- **2026-06-25** — Scanner Honeywell: acción de intent por defecto `com.honeywell.sample.action.BARCODE_DATA`
+  y claves de extra habituales; **se ajusta al confirmar el modelo** configurando el perfil Intent del equipo.
+  Archivo: `mobile/app/src/main/java/com/rack/scanner/HoneywellScannerProvider.kt`.
