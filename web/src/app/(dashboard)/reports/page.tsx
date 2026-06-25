@@ -17,6 +17,13 @@ interface WoWRow {
   delta_pct: number | null;
 }
 
+interface UnattributedRow {
+  sku: string;
+  name: string;
+  units: number;
+  amount: number;
+}
+
 export default function ReportsPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
@@ -26,7 +33,8 @@ export default function ReportsPage() {
   const [warehouse, setWarehouse] = useState<WarehouseRow[]>([]);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [layout, setLayout] = useState<StoreLayout | null>(null);
-  const [tab, setTab] = useState<'tabla' | 'heatmap' | 'almacen'>('tabla');
+  const [unattributed, setUnattributed] = useState<UnattributedRow[]>([]);
+  const [tab, setTab] = useState<'tabla' | 'heatmap' | 'almacen' | 'sinmueble'>('tabla');
 
   useEffect(() => {
     supabase
@@ -43,20 +51,23 @@ export default function ReportsPage() {
   const load = useCallback(async () => {
     if (!storeId) return;
     const prev = previousIsoWeek(week);
-    const [{ data: wow }, { data: wh }, { data: fx }, { data: lay }] = await Promise.all([
-      supabase.rpc('fixture_week_over_week', {
-        p_store_id: storeId,
-        p_week: week,
-        p_prev_week: prev,
-      }),
-      supabase.rpc('store_warehouse', { p_store_id: storeId, p_week: week }),
-      supabase.from('fixtures').select('*').eq('store_id', storeId),
-      supabase.from('store_layouts').select('*').eq('store_id', storeId).maybeSingle(),
-    ]);
+    const [{ data: wow }, { data: wh }, { data: fx }, { data: lay }, { data: un }] =
+      await Promise.all([
+        supabase.rpc('fixture_week_over_week', {
+          p_store_id: storeId,
+          p_week: week,
+          p_prev_week: prev,
+        }),
+        supabase.rpc('store_warehouse', { p_store_id: storeId, p_week: week }),
+        supabase.from('fixtures').select('*').eq('store_id', storeId),
+        supabase.from('store_layouts').select('*').eq('store_id', storeId).maybeSingle(),
+        supabase.rpc('unattributed_sales', { p_store_id: storeId, p_week: week }),
+      ]);
     setRows((wow ?? []) as WoWRow[]);
     setWarehouse((wh ?? []) as WarehouseRow[]);
     setFixtures((fx ?? []) as Fixture[]);
     setLayout((lay as StoreLayout) ?? null);
+    setUnattributed((un ?? []) as UnattributedRow[]);
   }, [supabase, storeId, week]);
 
   useEffect(() => {
@@ -94,6 +105,9 @@ export default function ReportsPage() {
         </button>
         <button className={tab === 'almacen' ? '' : 'secondary'} onClick={() => setTab('almacen')}>
           Almacén
+        </button>
+        <button className={tab === 'sinmueble' ? '' : 'secondary'} onClick={() => setTab('sinmueble')}>
+          Sin mueble
         </button>
       </div>
 
@@ -136,6 +150,42 @@ export default function ReportsPage() {
 
       {tab === 'heatmap' && (
         <Heatmap layout={layout} fixtures={fixtures} metrics={rows} />
+      )}
+
+      {tab === 'sinmueble' && (
+        <div>
+          <p className="muted">
+            SKUs vendidos esta semana que no se escanearon en ningún mueble (mueble sin escanear o
+            producto fuera de exhibición).
+          </p>
+          <table className="panel">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Producto</th>
+                <th>Unidades</th>
+                <th>Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unattributed.map((u) => (
+                <tr key={u.sku}>
+                  <td>{u.sku}</td>
+                  <td>{u.name}</td>
+                  <td>{fmt(u.units)}</td>
+                  <td>${fmt(u.amount)}</td>
+                </tr>
+              ))}
+              {unattributed.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    Todas las ventas de la semana quedaron atribuidas a un mueble. 🎉
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {tab === 'almacen' && (

@@ -39,6 +39,7 @@
 - [x] CI básica de tests de la web (`.github/workflows/ci.yml`).
 - [x] Datos de demo (`supabase/seed.sql`).
 - [x] Cobertura de escaneo semanal (`scan_coverage()` + `/coverage`).
+- [x] Reporte de ventas sin mueble (`unattributed_sales()` + pestaña en Reportes).
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
