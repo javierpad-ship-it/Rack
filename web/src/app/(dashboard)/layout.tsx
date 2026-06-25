@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import SignOutButton from './SignOutButton';
+import NavLinks from './NavLinks';
 
 const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
   { href: '/', label: 'Resumen', roles: ['admin', 'analista', 'visual', 'encargado', 'operario'] },
@@ -35,25 +35,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const items = NAV.filter((n) => n.roles.includes(role));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh' }}>
-      <aside style={{ borderRight: '1px solid var(--border)', padding: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Rack</h2>
-        <nav style={{ display: 'grid', gap: 6 }}>
-          {items.map((n) => (
-            <Link key={n.href} href={n.href}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-        <div style={{ marginTop: 24 }} className="muted">
-          <div>{profile?.full_name ?? user.email}</div>
-          <div style={{ fontSize: 12 }}>rol: {role}</div>
-          <div style={{ marginTop: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '232px 1fr', minHeight: '100vh' }}>
+      <aside className="side">
+        <div className="brand">
+          <span className="glyph">1E</span>
+          <span className="brand-name">Rack One</span>
+          <span className="brand-by">Lukers</span>
+        </div>
+        <NavLinks items={items.map(({ href, label }) => ({ href, label }))} />
+        <div className="who">
+          <div className="name">{profile?.full_name ?? user.email}</div>
+          <span className="role-badge">{role}</span>
+          <div style={{ marginTop: 12 }}>
             <SignOutButton />
           </div>
         </div>
       </aside>
-      <main style={{ padding: 24 }}>{children}</main>
+      <main className="content">{children}</main>
     </div>
   );
 }

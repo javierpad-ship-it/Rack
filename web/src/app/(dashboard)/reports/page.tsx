@@ -129,7 +129,7 @@ export default function ReportsPage() {
                 <td>{r.fixture_name}</td>
                 <td>{fmt(r.units_now)}</td>
                 <td>{fmt(r.units_prev)}</td>
-                <td style={{ color: r.delta_units >= 0 ? '#6bdc7a' : '#ff6b6b' }}>
+                <td className={r.delta_units >= 0 ? 'pos' : 'neg'}>
                   {r.delta_units >= 0 ? '+' : ''}
                   {fmt(r.delta_units)}
                 </td>

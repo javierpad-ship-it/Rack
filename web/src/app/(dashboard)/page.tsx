@@ -49,13 +49,13 @@ export default async function DashboardHome() {
 
   return (
     <div>
+      <span className="eyebrow">Semana {week}</span>
       <h1>Resumen</h1>
-      <p className="muted">Semana actual: {week}</p>
       <div className="row">
         {cards.map((c) => (
-          <div key={c.label} className="panel" style={{ minWidth: 180 }}>
+          <div key={c.label} className="panel stat-card">
             <div className="muted">{c.label}</div>
-            <div style={{ fontSize: 32, fontWeight: 700 }}>{c.value}</div>
+            <div className="stat-num">{c.value}</div>
           </div>
         ))}
       </div>
@@ -78,21 +78,10 @@ export default async function DashboardHome() {
                 {c.done}/{c.total}
               </td>
               <td>
-                <div
-                  style={{
-                    background: '#11141a',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                    width: 160,
-                    height: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${c.pct}%`,
-                      height: '100%',
-                      background: c.pct >= 100 ? '#6bdc7a' : 'var(--accent)',
-                    }}
+                <div className="track" style={{ width: 160, height: 12 }}>
+                  <span
+                    className={c.pct >= 100 ? 'done' : undefined}
+                    style={{ width: `${c.pct}%` }}
                   />
                 </div>
               </td>

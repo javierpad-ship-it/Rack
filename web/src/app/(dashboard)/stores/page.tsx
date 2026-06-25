@@ -46,7 +46,7 @@ export default function StoresPage() {
         <input placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
         <input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
         <button>Agregar</button>
-        {error && <span style={{ color: '#ff6b6b' }}>{error}</span>}
+        {error && <span className="neg">{error}</span>}
       </form>
       <table className="panel">
         <thead>

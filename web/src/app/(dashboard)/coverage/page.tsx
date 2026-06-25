@@ -82,7 +82,7 @@ export default function CoveragePage() {
           {rows.map((r) => (
             <tr key={r.fixture_id}>
               <td>{r.fixture_name}</td>
-              <td style={{ color: r.scanned ? '#6bdc7a' : '#ff6b6b' }}>
+              <td className={r.scanned ? 'pos' : 'neg'}>
                 {r.scanned ? '✓ Escaneado' : 'Pendiente'}
               </td>
               <td className="muted">

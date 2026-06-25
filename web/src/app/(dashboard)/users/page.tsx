@@ -79,7 +79,7 @@ export default function UsersPage() {
           ))}
         </select>
         <button>Crear</button>
-        {error && <span style={{ color: '#ff6b6b' }}>{error}</span>}
+        {error && <span className="neg">{error}</span>}
       </form>
 
       <table className="panel">

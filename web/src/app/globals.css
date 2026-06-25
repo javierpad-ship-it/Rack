@@ -1,50 +1,367 @@
+/* ============================================================================
+   Rack One — sistema visual (cliente: Lukers)
+   Identidad derivada del logo: azul eléctrico + navy/índigo sobre claro frío.
+   Marca 3D "1E" tipo estantería. Tema claro.
+   ============================================================================ */
+
 :root {
-  --bg: #0f1115;
-  --panel: #1a1d24;
-  --border: #2a2f3a;
-  --text: #e6e8eb;
-  --muted: #9aa0ab;
-  --accent: #4f8cff;
+  /* Marca Rack One */
+  --brand-deep:  #142A6E;  /* índigo profundo (texto "RACK", facetas oscuras) */
+  --brand:       #2B5BE2;  /* azul royal (acento principal) */
+  --brand-bright:#4D8DF7;  /* azul brillante ("ONE", highlight del degradé) */
+  --brand-grad:  linear-gradient(135deg, #1E3FB0 0%, #3B6FEF 55%, #4D8DF7 100%);
+
+  /* Superficies (claro frío, como el fondo del logo) */
+  --bg:          #EEF2FB;
+  --surface:     #FFFFFF;
+  --surface-2:   #F5F8FE;
+
+  /* Texto */
+  --text:        #14203A;
+  --muted:       #5E6B85;
+
+  /* Líneas */
+  --border:      #E0E6F2;
+  --border-2:    #CFD8EA;
+
+  /* Semánticos */
+  --pos:         #1F7A52;
+  --danger:      #C0473B;
+  --track:       #E3E9F6;
+
+  /* Compat: páginas existentes usan var(--accent) */
+  --accent:      var(--brand);
+  --panel-radius: 14px;
+
+  /* Tipografía (cargada por <link> en el layout) */
+  --font-display: 'Sora', 'Manrope', system-ui, sans-serif;
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  background:
+    radial-gradient(1100px 560px at 100% -10%, #E6EDFB 0%, rgba(238,242,251,0) 60%),
+    var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-a { color: var(--accent); text-decoration: none; }
+/* --- Tipografía -------------------------------------------------------- */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--brand-deep);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0 0 0.4em;
+}
+h1 { font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.3rem); }
+h2 { font-size: clamp(1.25rem, 1rem + 0.8vw, 1.5rem); }
+h3 { font-size: 1.1rem; }
 
+p { margin: 0 0 0.8em; }
+
+/* Antetítulo */
+.eyebrow {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+.eyebrow::before {
+  content: '';
+  width: 18px; height: 3px; border-radius: 2px;
+  background: var(--brand-grad);
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+a:hover { color: var(--brand-deep); border-bottom-color: var(--brand-bright); }
+
+/* --- Tarjetas / paneles ----------------------------------------------- */
 .panel {
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: var(--panel-radius);
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(20, 42, 110, 0.05), 0 10px 26px -18px rgba(20, 42, 110, 0.28);
 }
 
-input, select, button {
-  font: inherit;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #11141a;
+/* Tarjeta-métrica del resumen */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 190px;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--brand-grad);
+}
+.stat-card .stat-num {
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+  line-height: 1;
+  margin-top: 4px;
+  letter-spacing: -0.02em;
+}
+
+/* --- Formularios ------------------------------------------------------- */
+input, select, textarea, button { font: inherit; }
+input, select, textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
   color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input::placeholder { color: #9aa3b8; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(43, 91, 226, 0.2);
 }
 
 button {
-  background: var(--accent);
-  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--brand-grad);
+  color: #fff;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 8px 18px -10px rgba(43, 91, 226, 0.7);
 }
-button.secondary { background: #2a2f3a; }
+button:hover { filter: brightness(1.06); }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
+button.secondary {
+  background: var(--surface);
+  color: var(--brand);
+  border-color: var(--border-2);
+  box-shadow: none;
+}
+button.secondary:hover { background: var(--surface-2); filter: none; }
+
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* --- Tablas ------------------------------------------------------------ */
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-th { color: var(--muted); font-weight: 600; }
+table.panel { padding: 6px 4px; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+th {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+tbody tr { transition: background 0.12s ease; }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: none; }
 
-.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+/* --- Barra de progreso (cobertura) ------------------------------------ */
+.track { background: var(--track); border-radius: 999px; overflow: hidden; }
+.track > span { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.track > span.done { background: var(--brand-grad); }
+
+/* --- Utilidades -------------------------------------------------------- */
+.row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .muted { color: var(--muted); }
+.pos { color: var(--pos); font-weight: 600; }
+.neg { color: var(--danger); font-weight: 600; }
+
+/* --- Glifo de marca (placeholder vectorial del ícono 1E) -------------- */
+.glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: var(--brand-grad);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.04em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 14px -8px rgba(43,91,226,0.8);
+}
+
+/* ============================================================================
+   Barra lateral del panel
+   ============================================================================ */
+.side {
+  background: linear-gradient(180deg, #142A6E 0%, #0D1B4A 100%);
+  color: #E6ECFB;
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border-right: 1px solid var(--border);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 6px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.brand img.logo { height: 30px; width: auto; display: block; }
+.brand .brand-name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.brand .brand-by {
+  margin-left: auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7E93C6;
+}
+
+.side nav { display: flex; flex-direction: column; gap: 2px; }
+.side nav a {
+  color: #BCC9E6;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.side nav a::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: transparent;
+  transition: background 0.14s ease, box-shadow 0.14s ease;
+}
+.side nav a:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.side nav a.active { background: rgba(77, 141, 247, 0.18); color: #fff; }
+.side nav a.active::before { background: var(--brand-bright); box-shadow: 0 0 8px var(--brand-bright); }
+
+.side .who {
+  margin-top: auto;
+  font-size: 0.82rem;
+  color: #A7B6D9;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 14px;
+}
+.side .who .name { color: #fff; font-weight: 600; }
+.role-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--brand-bright);
+  border: 1px solid rgba(77, 141, 247, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.content { padding: 30px 34px; max-width: 1180px; }
+
+/* ============================================================================
+   Login
+   ============================================================================ */
+.auth {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+}
+.auth-brand {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(150deg, #142A6E 0%, #0B1740 100%);
+  color: #fff;
+  padding: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.auth-brand .lockup { display: flex; align-items: center; gap: 14px; }
+.auth-brand .lockup img.logo { height: 54px; width: auto; }
+.auth-brand .lockup .mark {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 1.5rem + 2vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.auth-brand .lockup .mark .on { color: var(--brand-bright); }
+.auth-brand .slogan {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 1rem + 2vw, 2.1rem);
+  line-height: 1.18;
+  max-width: 16ch;
+  color: #EAF0FB;
+  letter-spacing: -0.01em;
+}
+.auth-brand .slogan em { color: var(--brand-bright); font-style: normal; }
+.auth-brand .foot { color: #7E93C6; font-size: 0.8rem; letter-spacing: 0.04em; }
+/* halo/degradé de fondo (signature) */
+.auth-brand .ghost {
+  position: absolute;
+  right: -12%;
+  bottom: -22%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 30%;
+  background: radial-gradient(closest-side, rgba(77,141,247,0.28), rgba(77,141,247,0));
+  pointer-events: none;
+}
+
+.auth-form {
+  display: grid;
+  place-items: center;
+  padding: 40px 28px;
+  background: var(--bg);
+}
+.auth-form form { width: min(360px, 100%); }
+.auth-form h1 { margin-bottom: 4px; }
+.auth-form .fields { display: grid; gap: 12px; margin-top: 22px; }
+.auth-form button { width: 100%; margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth-brand { padding: 36px 30px; min-height: 180px; }
+  .auth-brand .slogan, .auth-brand .foot { display: none; }
+}
+
+/* ============================================================================
+   Accesibilidad
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

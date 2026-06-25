@@ -19,9 +19,9 @@ const LABEL: Record<string, string> = {
 };
 
 const SEV_COLOR: Record<string, string> = {
-  alta: '#ff6b6b',
-  media: '#ffcc00',
-  baja: '#9aa0ab',
+  alta: '#C0473B',
+  media: '#A9781A',
+  baja: '#647084',
 };
 
 export default function AlertsPage() {

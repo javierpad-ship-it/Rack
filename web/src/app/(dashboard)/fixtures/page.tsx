@@ -89,7 +89,7 @@ export default function FixturesPage() {
         />
         <input placeholder="Nombre del mueble" value={name} onChange={(e) => setName(e.target.value)} required />
         <button disabled={!storeId}>Agregar</button>
-        {error && <span style={{ color: '#ff6b6b' }}>{error}</span>}
+        {error && <span className="neg">{error}</span>}
       </form>
 
       <table className="panel">

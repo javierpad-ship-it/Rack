@@ -23,29 +23,48 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
-      <form className="panel" style={{ width: 340 }} onSubmit={onSubmit}>
-        <h1 style={{ marginTop: 0 }}>Rack</h1>
-        <p className="muted">Administración de rotación por mueble</p>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <p style={{ color: '#ff6b6b', margin: 0 }}>{error}</p>}
-          <button disabled={loading}>{loading ? 'Ingresando…' : 'Ingresar'}</button>
+    <main className="auth">
+      <section className="auth-brand">
+        <div className="lockup">
+          <span className="glyph">1E</span>
+          <span className="mark">
+            Rack<span className="on">One</span>
+          </span>
         </div>
-      </form>
+        <p className="slogan">
+          Rotación y venta por mueble, <em>en foco</em>.
+        </p>
+        <p className="foot">LUKERS · Powered by Rack One</p>
+        <span className="ghost" aria-hidden="true" />
+      </section>
+
+      <section className="auth-form">
+        <form onSubmit={onSubmit}>
+          <span className="eyebrow">Acceso</span>
+          <h1>Ingresar</h1>
+          <p className="muted">Panel de administración de Lukers.</p>
+          <div className="fields">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {error && <p className="neg" style={{ margin: 0 }}>{error}</p>}
+            <button className="gold" disabled={loading}>
+              {loading ? 'Ingresando…' : 'Ingresar'}
+            </button>
+          </div>
+        </form>
+      </section>
     </main>
   );
 }
