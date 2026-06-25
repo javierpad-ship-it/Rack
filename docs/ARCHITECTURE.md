@@ -80,4 +80,7 @@ La ingesta diaria (Fase 2) solo refresca la venta de la semana en curso; la proy
 
 - `Room` espeja: catálogo de la tienda, muebles, y sesiones/líneas pendientes de sync.
 - `SyncWorker` (WorkManager) empuja sesiones pendientes vía REST y baja catálogo/muebles actualizados.
-- Escaneo abstraído tras `ScannerProvider`; implementación Honeywell por intents + fallback wedge.
+- Escaneo abstraído tras `ScannerProvider`. Equipo confirmado: **Honeywell ScanPal EDA52**;
+  `HoneywellScannerProvider` usa la Intent API de DataCollection con **auto-config (claim/release)** —
+  reclama el imager y redirige las lecturas a la acción propia de la app, sin configurar cada equipo.
+  Fallback **keyboard wedge** para desarrollo/equipos no Honeywell. Detalle en `docs/SCANNER_EDA52.md`.

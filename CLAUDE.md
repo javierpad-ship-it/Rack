@@ -7,7 +7,7 @@ Guía para trabajar en este repositorio.
 Solución multi-tienda para medir **rotación y venta por mueble**. Tres componentes:
 - `supabase/` — PostgreSQL + RLS + lógica de negocio (atribución, métricas, almacén).
 - `web/` — Next.js (App Router) + TypeScript: administración, import Excel, reportes, heatmap.
-- `mobile/` — Android Kotlin + Compose: escaneo offline-first en equipos Honeywell.
+- `mobile/` — Android Kotlin + Compose: escaneo offline-first en **Honeywell ScanPal EDA52**.
 
 Ver `README.md`, `docs/ARCHITECTURE.md` y `docs/ROADMAP.md`.
 
@@ -44,7 +44,8 @@ cd mobile && ./gradlew test                 # tests JVM (IsoWeek)
   (`supabase/migrations/0001_init.sql`); no reimplementar permisos en el cliente salvo UX.
 - Operaciones masivas/admin en la web usan **service-role** desde Server Actions (`web/.../*/actions.ts`),
   nunca desde el cliente.
-- El scanner está detrás de `ScannerProvider`; no acoplar la UI a Honeywell directamente.
+- El scanner está detrás de `ScannerProvider`; no acoplar la UI a Honeywell directamente. Equipo:
+  **ScanPal EDA52** vía Intent API con auto-config (claim/release). Ver `docs/SCANNER_EDA52.md`.
 
 ## Decisiones con default pendientes de confirmar
 

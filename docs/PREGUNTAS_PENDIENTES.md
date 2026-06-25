@@ -8,8 +8,9 @@
    - _Default asumido:_ ver `docs/FORMATOS_IMPORT.md`.
 2. **Definición de "semana"**: ¿ISO week o semana comercial (qué día empieza)?
    - _Default asumido:_ ISO week (`iso_week()` en `0002_attribution.sql`).
-3. **Modelo Honeywell y versión de Android**: define la implementación final del scanner.
-   - _Default asumido:_ integración por Honeywell DataCollection intents + fallback keyboard wedge.
+3. **Modelo Honeywell y versión de Android**: ✅ **RESUELTO (2026-06-25)** → **Honeywell ScanPal EDA52**
+   (`EDA52-11AE64N21RK`). Integración por Honeywell DataCollection (Intent API con auto-config
+   claim/release) + fallback keyboard wedge. Ver `docs/SCANNER_EDA52.md`.
 
 ## Decisiones tomadas durante el loop nocturno
 <!-- El loop agrega aquí cada default que eligió, con fecha y archivo afectado. -->
@@ -25,9 +26,11 @@
   `web/src/app/(dashboard)/layout/page.tsx`.
 - **2026-06-25** — Android: `minSdk = 24` (Android 7+) para cubrir equipos Honeywell antiguos. Archivo:
   `mobile/app/build.gradle.kts`.
-- **2026-06-25** — Scanner Honeywell: acción de intent por defecto `com.honeywell.sample.action.BARCODE_DATA`
-  y claves de extra habituales; **se ajusta al confirmar el modelo** configurando el perfil Intent del equipo.
-  Archivo: `mobile/app/src/main/java/com/rack/scanner/HoneywellScannerProvider.kt`.
+- **2026-06-25** — Scanner Honeywell **confirmado = ScanPal EDA52**. El provider usa la **Intent API
+  con auto-config** (claim/release): reclama el imager (`dcs.scanner.imager`, perfil `DEFAULT`) y le pide
+  entregar lecturas a la acción propia `com.rack.scanner.BARCODE_DATA` (extra `data`), sin tocar Settings
+  en cada equipo. Receiver registrado como `RECEIVER_EXPORTED` (Android 13+/targetSdk 34). Sin SDK .aar.
+  Archivos: `mobile/app/src/main/java/com/rack/scanner/HoneywellScannerProvider.kt`, `docs/SCANNER_EDA52.md`.
 - **2026-06-25** — App: el operario escanea **un mueble por sesión**; el conteo es por incremento (+1 por
   lectura) y editable con +/−. La resolución de producto acepta **SKU o EAN** contra el catálogo cacheado.
   Archivo: `mobile/app/src/main/java/com/rack/ui/ScanViewModel.kt`.
