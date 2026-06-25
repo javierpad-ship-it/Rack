@@ -48,7 +48,8 @@
 Diseño detallado en `docs/FASE2_DISENO.md`.
 - [x] Alias de producto (`product_aliases` + `resolve_sku()`) + resolución en import de ventas.
 - [x] Staging + infra de ingesta (`integrations`, `ingest_runs`, `*_staging`, `process_*_staging()`).
-- [ ] Adaptador de ingesta del POS/ERP (pull programado, Edge Function).
+- [x] Adaptador de ingesta del POS/ERP — plantilla (Edge Function `ingest-sales`, POS-agnóstica).
+- [ ] Implementar el adaptador del POS real del cliente + programar con pg_cron.
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.
 - [ ] Analítica avanzada: rotación, alertas, tendencias.

@@ -35,3 +35,5 @@
 - **2026-06-25** — Fase 2: los **alias de producto** se resuelven en el **import de ventas** (no en `attribute_sales`),
   agregando duplicados que colapsan al mismo SKU. Confirmar reglas de alias del POS. Archivos:
   `supabase/migrations/0006_product_aliases.sql`, `web/src/app/(dashboard)/import/actions.ts`.
+- **2026-06-25** — Fase 2: el adaptador POS es una **plantilla genérica** (`supabase/functions/ingest-sales`);
+  el mapeo real (endpoint, auth, formato de respuesta) se completa al conocer el POS del cliente.
