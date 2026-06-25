@@ -45,6 +45,9 @@
 - [x] Guía de usuario por rol (`docs/GUIA_USUARIO.md`).
 
 ## Fase 2 — Automatización / analítica
+Diseño detallado en `docs/FASE2_DISENO.md`.
+- [ ] Alias de producto (`product_aliases`) + resolución en atribución.
+- [ ] Staging + adaptador de ingesta del POS/ERP (pull programado).
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.
 - [ ] Analítica avanzada: rotación, alertas, tendencias.
