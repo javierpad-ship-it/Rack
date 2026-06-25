@@ -42,6 +42,7 @@
 - [x] Reporte de ventas sin mueble (`unattributed_sales()` + pestaña en Reportes).
 - [x] Dashboard con cobertura de escaneo por tienda (barras de avance).
 - [x] App: botón de sincronización manual + contador de pendientes.
+- [x] Guía de usuario por rol (`docs/GUIA_USUARIO.md`).
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
