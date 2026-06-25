@@ -31,6 +31,12 @@
 - [x] `recalc_store_warehouse` (almacén deducido).
 - [ ] Disparo de atribución tras import de ventas.
 
+**Tests / calidad (post Fase 1)**
+- [x] Tests del parser de Excel (`web/src/lib/import/parseExcel.test.ts`).
+- [x] Test de semana ISO en web y Android.
+- [x] Test SQL de atribución + rotación + almacén (`supabase/tests/attribution_test.sql`).
+- [ ] Guía de despliegue (`docs/DEPLOY.md`).
+
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.
