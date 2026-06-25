@@ -28,3 +28,7 @@
 - **2026-06-25** — Scanner Honeywell: acción de intent por defecto `com.honeywell.sample.action.BARCODE_DATA`
   y claves de extra habituales; **se ajusta al confirmar el modelo** configurando el perfil Intent del equipo.
   Archivo: `mobile/app/src/main/java/com/rack/scanner/HoneywellScannerProvider.kt`.
+- **2026-06-25** — App: el operario escanea **un mueble por sesión**; el conteo es por incremento (+1 por
+  lectura) y editable con +/−. La resolución de producto acepta **SKU o EAN** contra el catálogo cacheado.
+  Archivo: `mobile/app/src/main/java/com/rack/ui/ScanViewModel.kt`.
+- **2026-06-25** — Falta generar el **Gradle wrapper** (`gradlew`) en un entorno con Gradle; ver `mobile/README.md`.

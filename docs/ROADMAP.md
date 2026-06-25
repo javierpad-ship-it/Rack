@@ -23,8 +23,8 @@
 - [x] Utilidad de semana ISO (espejo de web/SQL) + test.
 - [x] Cliente REST a Supabase (Auth + PostgREST) y SessionStore.
 - [x] Sincronización offline (SyncWorker + SyncScheduler, idempotente por client_uid).
-- [ ] Login (Supabase Auth) — UI.
-- [ ] Escaneo de mueble + conteo de cantidades por SKU (UI).
+- [x] Login (Supabase Auth) — UI Compose.
+- [x] Escaneo de mueble + conteo de cantidades por SKU (UI Compose).
 
 **Backend**
 - [x] `attribute_sales` (regla "primer mueble").
