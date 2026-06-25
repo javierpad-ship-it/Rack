@@ -12,7 +12,7 @@
 - [x] Cliente Supabase + login por rol (middleware + dashboard).
 - [x] Import Excel: catálogo, ventas, stock total (con `import_logs`) + disparo de atribución.
 - [x] CRUD tiendas / muebles / usuarios.
-- [ ] Subir plano + ubicar pines (rol Visual).
+- [x] Subir plano + ubicar pines (rol Visual). Storage bucket `layouts` (`0003_storage.sql`).
 - [ ] Reportes: venta por mueble, comparativa semana a semana.
 - [ ] Heatmap sobre el plano.
 

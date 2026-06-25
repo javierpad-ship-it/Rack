@@ -20,3 +20,6 @@
   (ver `docs/FORMATOS_IMPORT.md`). Confirmar nombres reales del POS/ERP. Archivo: `web/src/lib/import/parseExcel.ts`.
 - **2026-06-25** — Auth: login por **email/contraseña** de Supabase Auth (sin SSO). Archivo: `web/src/app/login/page.tsx`.
 - **2026-06-25** — Import masivo se ejecuta con **service-role** desde Server Actions (solo rol admin). Archivo: `web/src/app/(dashboard)/import/actions.ts`.
+- **2026-06-25** — Plano: bucket de Storage **`layouts` público** (lectura), escritura admin/visual. El pin se
+  ubica con **clic sobre la imagen** (coordenadas normalizadas). Archivos: `supabase/migrations/0003_storage.sql`,
+  `web/src/app/(dashboard)/layout/page.tsx`.
