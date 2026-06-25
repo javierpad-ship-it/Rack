@@ -38,6 +38,7 @@
 - [x] Guía de despliegue (`docs/DEPLOY.md`).
 - [x] CI básica de tests de la web (`.github/workflows/ci.yml`).
 - [x] Datos de demo (`supabase/seed.sql`).
+- [x] Cobertura de escaneo semanal (`scan_coverage()` + `/coverage`).
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
