@@ -30,6 +30,7 @@ returns table (week text) language sql stable as $$
 $$;
 
 -- Métricas mensuales proyectadas por mueble.
+-- Rotación proyectada = unidades proyectadas / STOCK TOTAL (piso + almacén) de los SKUs del mueble.
 create or replace function fixture_monthly_metrics(p_store_id uuid, p_month text)
 returns table (
   fixture_id          uuid,
@@ -37,6 +38,7 @@ returns table (
   mtd_units           int,
   mtd_amount          numeric,
   exposed_units       int,
+  total_stock         int,
   projected_units     numeric,
   projected_amount    numeric,
   rotation_projected  numeric
@@ -100,6 +102,20 @@ begin
     from last_session ls
     join scan_lines sl on sl.session_id = ls.session_id
     group by ls.fixture_id
+  ),
+  -- Stock total (piso + almacén) por SKU: el del mes más reciente disponible.
+  sku_total_stock as (
+    select distinct on (st.sku) st.sku, st.total_units
+    from store_stock st
+    where st.store_id = p_store_id and st.week in (select week from weeks)
+    order by st.sku, st.week desc
+  ),
+  -- Stock total atribuido a cada mueble (por SKU según último mueble del mes).
+  fixture_stock as (
+    select lf.fixture_id, sum(sts.total_units)::int as total_stock
+    from last_fixture lf
+    join sku_total_stock sts on sts.sku = lf.sku
+    group by lf.fixture_id
   )
   select
     f.id,
@@ -107,16 +123,18 @@ begin
     coalesce(sold.mtd_units, 0),
     coalesce(sold.mtd_amount, 0),
     coalesce(exposed.exposed_units, 0),
+    coalesce(fixture_stock.total_stock, 0),
     round(coalesce(sold.mtd_units, 0)::numeric * v_days_in_month / v_days_elapsed, 1),
     round(coalesce(sold.mtd_amount, 0) * v_days_in_month / v_days_elapsed, 2),
-    case when coalesce(exposed.exposed_units, 0) > 0
+    case when coalesce(fixture_stock.total_stock, 0) > 0
          then round(
                 (coalesce(sold.mtd_units, 0)::numeric * v_days_in_month / v_days_elapsed)
-                / exposed.exposed_units, 4)
+                / fixture_stock.total_stock, 4)
          else null end
   from fixtures f
-  left join sold    on sold.fixture_id = f.id
-  left join exposed on exposed.fixture_id = f.id
+  left join sold         on sold.fixture_id = f.id
+  left join exposed      on exposed.fixture_id = f.id
+  left join fixture_stock on fixture_stock.fixture_id = f.id
   where f.store_id = p_store_id
     and (sold.fixture_id is not null or exposed.fixture_id is not null)
   order by coalesce(sold.mtd_amount, 0) desc;

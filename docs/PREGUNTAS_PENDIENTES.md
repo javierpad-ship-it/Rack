@@ -42,3 +42,6 @@
   stock expuesto del **último escaneo** del mes. Confirmar si la "semana comercial" cambiaría este anclaje.
   Archivos: `supabase/migrations/0010_monthly.sql`, `web/src/app/(dashboard)/monthly/page.tsx`.
 - **Ingesta diaria confirmada** por el usuario; queda programar el job (pg_cron) al conectar el POS.
+- **2026-06-25** — Rotación mensual proyectada: se mide contra **stock total (piso + almacén)** de los SKUs
+  del mueble (decisión del usuario), usando `store_stock` de la semana más reciente del mes.
+  El "stock expuesto" queda como dato informativo. Archivo: `supabase/migrations/0010_monthly.sql`.

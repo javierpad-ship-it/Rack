@@ -11,6 +11,7 @@ interface MonthlyRow {
   mtd_units: number;
   mtd_amount: number;
   exposed_units: number;
+  total_stock: number;
   projected_units: number;
   projected_amount: number;
   rotation_projected: number | null;
@@ -55,7 +56,7 @@ export default function MonthlyPage() {
       <h1>Proyección mensual</h1>
       <p className="muted">
         Venta acumulada del mes proyectada a fin de mes (lineal por días corridos). Atribución por
-        último mueble escaneado; stock expuesto del último escaneo del mes.
+        último mueble escaneado. Rotación proyectada = venta proyectada / stock total (piso + almacén).
       </p>
       <div className="row" style={{ marginBottom: 12 }}>
         <label>
@@ -80,6 +81,7 @@ export default function MonthlyPage() {
             <th>Venta MTD</th>
             <th>Venta proyectada</th>
             <th>Stock expuesto</th>
+            <th>Stock total</th>
             <th>Rotación proyectada</th>
           </tr>
         </thead>
@@ -94,12 +96,13 @@ export default function MonthlyPage() {
                 {fmt(r.projected_units)} u · ${fmt(r.projected_amount)}
               </td>
               <td>{fmt(r.exposed_units)} u</td>
+              <td>{fmt(r.total_stock)} u</td>
               <td>{r.rotation_projected != null ? r.rotation_projected.toFixed(2) : '—'}</td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={6} className="muted">
                 Sin datos del mes. Importá ventas y asegurate de haber escaneado los muebles.
               </td>
             </tr>

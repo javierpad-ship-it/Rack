@@ -32,15 +32,21 @@ insert into sales (store_id, sku, week, units, amount) values
   ('00000000-0000-0000-0000-0000000000bb', 'MK1', '2026-W02', 20, 2000),
   ('00000000-0000-0000-0000-0000000000bb', 'MK1', '2026-W03', 11, 1100);
 
+-- Stock total (piso + almacén) del mes: 50 u (semana más reciente, W03).
+insert into store_stock (store_id, sku, week, total_units) values
+  ('00000000-0000-0000-0000-0000000000bb', 'MK1', '2026-W03', 50);
+
 do $$
 declare
   v_fixture text;
   v_proj numeric;
   v_mtd int;
+  v_rot numeric;
+  v_total int;
 begin
   -- La venta del mes debe atribuirse a Mueble B (último escaneo).
-  select fixture_name, mtd_units, projected_units
-    into v_fixture, v_mtd, v_proj
+  select fixture_name, mtd_units, projected_units, total_stock, rotation_projected
+    into v_fixture, v_mtd, v_proj, v_total, v_rot
   from fixture_monthly_metrics('00000000-0000-0000-0000-0000000000bb', '2026-01')
   where mtd_units > 0;
 
@@ -54,8 +60,16 @@ begin
   if round(v_proj) <> 31 then
     raise exception 'FALLO: proyección esperada 31 (mes completo), fue %', v_proj;
   end if;
+  if v_total <> 50 then
+    raise exception 'FALLO: stock total esperado 50, fue %', v_total;
+  end if;
+  -- Rotación proyectada = 31 / 50 = 0.62.
+  if round(v_rot, 2) <> 0.62 then
+    raise exception 'FALLO: rotación proyectada esperada 0.62 (31/50), fue %', v_rot;
+  end if;
 
-  raise notice 'OK: proyección mensual correcta (% , MTD=%, proy=%).', v_fixture, v_mtd, v_proj;
+  raise notice 'OK: proyección mensual correcta (%, MTD=%, proy=%, stock=%, rot=%).',
+    v_fixture, v_mtd, v_proj, v_total, v_rot;
 end $$;
 
 -- Verifica el anclaje semana->mes por jueves.

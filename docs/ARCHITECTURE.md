@@ -62,10 +62,11 @@ Vista mensual proyectada (además de la semanal). En `supabase/migrations/0010_m
 
 - **Semana → mes:** una semana pertenece al mes de su **jueves ISO** (`iso_week_thursday()`).
 - **Atribución:** la venta del mes de un SKU va al **último mueble escaneado** del mes (mayor `scanned_at`).
-- **Stock expuesto:** el del **último escaneo** del mes por mueble.
+- **Stock expuesto:** el del **último escaneo** del mes por mueble (informativo).
 - **Proyección lineal por días corridos:** `proyectado = mtd × días_del_mes / días_transcurridos`.
   Mes en curso → días hasta hoy; mes pasado → mes completo.
-- **Rotación proyectada** = unidades proyectadas / stock expuesto.
+- **Rotación proyectada** = unidades proyectadas / **stock total (piso + almacén)** de los SKUs del mueble
+  (`store_stock` de la semana más reciente del mes; sin doble conteo gracias a la atribución último-mueble).
 
 La ingesta diaria (Fase 2) solo refresca la venta de la semana en curso; la proyección se recalcula on-demand.
 
