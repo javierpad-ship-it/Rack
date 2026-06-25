@@ -5,10 +5,21 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Si faltan las variables, no reventar con 500: dejar pasar al login,
+  // que mostrará un estado degradado en vez de tirar la app entera.
+  if (!url || !anonKey) {
+    const path = request.nextUrl.pathname;
+    if (!path.startsWith('/login')) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    return response;
+  }
+
+  try {
+    const supabase = createServerClient(url, anonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -19,26 +30,34 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
-    },
-  );
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-  const isAuthRoute = path.startsWith('/login');
+    const path = request.nextUrl.pathname;
+    const isAuthRoute = path.startsWith('/login');
 
-  if (!user && !isAuthRoute) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    if (!user && !isAuthRoute) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    if (user && isAuthRoute) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+
+    return response;
+  } catch {
+    // Ante cualquier fallo del cliente Supabase, no tumbar la app:
+    // mandar al login en vez de devolver 500.
+    const path = request.nextUrl.pathname;
+    if (!path.startsWith('/login')) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    return response;
   }
-  if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  return response;
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:svg|png|jpg|jpeg)$).*)'],
 };
