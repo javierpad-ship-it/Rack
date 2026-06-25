@@ -41,6 +41,7 @@
 - [x] Cobertura de escaneo semanal (`scan_coverage()` + `/coverage`).
 - [x] Reporte de ventas sin mueble (`unattributed_sales()` + pestaña en Reportes).
 - [x] Dashboard con cobertura de escaneo por tienda (barras de avance).
+- [x] App: botón de sincronización manual + contador de pendientes.
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).

@@ -111,6 +111,13 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = ScanUiState(pendingCount = _state.value.pendingCount)
     }
 
+    /** Fuerza una sincronización manual y refresca el contador de pendientes. */
+    fun syncNow() {
+        SyncScheduler.syncNow(getApplication())
+        setMessage("Sincronizando…")
+        refreshPending()
+    }
+
     private fun refreshPending() {
         viewModelScope.launch {
             _state.value = _state.value.copy(pendingCount = db.dao().pendingCount())

@@ -45,8 +45,14 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
                 state.fixture?.let { "Mueble: ${it.name}" } ?: "Escaneá un mueble",
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text("Pend.: ${state.pendingCount}")
-        }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Pend.: ${state.pendingCount}")
+                OutlinedButton(
+                    onClick = { vm.syncNow() },
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("Sincronizar") }
+            }
+}
 
         OutlinedTextField(
             value = wedge,
