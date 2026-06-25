@@ -1,0 +1,39 @@
+# Roadmap
+
+## Fase 0 — Setup (en curso)
+- [x] Estructura del repositorio y documentación.
+- [x] Esquema PostgreSQL + RLS (`supabase/migrations/0001_init.sql`).
+- [x] Lógica de atribución y métricas (`supabase/migrations/0002_attribution.sql`).
+- [ ] Proyecto Supabase creado + migraciones aplicadas.
+- [ ] Auth/roles configurados.
+
+## Fase 1 — MVP
+**Web**
+- [ ] Cliente Supabase + login por rol.
+- [ ] Import Excel: catálogo, ventas, stock total (con `import_logs`).
+- [ ] CRUD tiendas / muebles / usuarios.
+- [ ] Subir plano + ubicar pines (rol Visual).
+- [ ] Reportes: venta por mueble, comparativa semana a semana.
+- [ ] Heatmap sobre el plano.
+
+**App Android**
+- [ ] Login (Supabase Auth).
+- [ ] Escaneo de mueble + conteo de cantidades por SKU.
+- [ ] Persistencia offline (Room).
+- [ ] Sincronización (WorkManager).
+- [ ] Integración scanner Honeywell (intents) + fallback wedge.
+
+**Backend**
+- [x] `attribute_sales` (regla "primer mueble").
+- [x] `recalc_store_warehouse` (almacén deducido).
+- [ ] Disparo de atribución tras import de ventas.
+
+## Fase 2 — Automatización / analítica
+- [ ] Integración API POS/ERP (ventas, stock, catálogo).
+- [ ] Deducción automática de almacén.
+- [ ] Analítica avanzada: rotación, alertas, tendencias.
+
+## Pendientes funcionales a confirmar
+- Formato/columnas de los Excel (catálogo, ventas, stock total).
+- Definición de "semana" (ISO vs comercial).
+- Modelo Honeywell final (fija `ScannerProvider`).

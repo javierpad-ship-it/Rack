@@ -1,0 +1,29 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.env
+.env*.local
+npm-debug.log*
+yarn-error.log*
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+.env.supabase
+
+# Android / Kotlin
+mobile/.gradle/
+mobile/build/
+mobile/app/build/
+mobile/local.properties
+mobile/.idea/
+*.iml
+*.apk
+*.keystore
+
+# OS / editor
+.DS_Store
+.vscode/
+*.log
