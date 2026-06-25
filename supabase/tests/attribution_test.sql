@@ -87,4 +87,41 @@ begin
   raise notice 'OK: almacén deducido correcto.';
 end $$;
 
+-- ---- Ventas sin mueble: SKU3 se vende pero no se escaneó en ningún mueble ----
+insert into products (sku, name) values ('SKU3', 'Producto 3');
+insert into sales (store_id, sku, week, units, amount)
+values ('00000000-0000-0000-0000-0000000000aa', 'SKU3', '2026-W26', 2, 200);
+select attribute_sales('00000000-0000-0000-0000-0000000000aa', '2026-W26');
+
+do $$
+declare
+  v_units int;
+  v_name text;
+begin
+  select units, name into v_units, v_name
+  from unattributed_sales('00000000-0000-0000-0000-0000000000aa', '2026-W26')
+  where sku = 'SKU3';
+  if v_units is distinct from 2 then
+    raise exception 'FALLO: SKU3 debía aparecer sin mueble con 2 unidades, fue %', v_units;
+  end if;
+  raise notice 'OK: ventas sin mueble correctas (% x%).', v_name, v_units;
+end $$;
+
+-- ---- Cobertura: M1 y M2 escaneados, M3 (nuevo) pendiente ----
+insert into fixtures (id, store_id, barcode, name)
+values ('00000000-0000-0000-0000-0000000000f3', '00000000-0000-0000-0000-0000000000aa', 'M3', 'Mueble 3');
+
+do $$
+declare
+  v_done int;
+  v_total int;
+begin
+  select count(*) filter (where scanned), count(*) into v_done, v_total
+  from scan_coverage('00000000-0000-0000-0000-0000000000aa', '2026-W26');
+  if v_done <> 2 or v_total <> 3 then
+    raise exception 'FALLO: cobertura esperada 2/3, fue %/%', v_done, v_total;
+  end if;
+  raise notice 'OK: cobertura de escaneo correcta (%/%).', v_done, v_total;
+end $$;
+
 rollback;
