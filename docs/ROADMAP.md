@@ -21,9 +21,10 @@
 - [x] Persistencia offline (Room): entidades, DAO, base.
 - [x] Integración scanner Honeywell (intents) + fallback wedge (`ScannerProvider`).
 - [x] Utilidad de semana ISO (espejo de web/SQL) + test.
-- [ ] Login (Supabase Auth).
+- [x] Cliente REST a Supabase (Auth + PostgREST) y SessionStore.
+- [x] Sincronización offline (SyncWorker + SyncScheduler, idempotente por client_uid).
+- [ ] Login (Supabase Auth) — UI.
 - [ ] Escaneo de mueble + conteo de cantidades por SKU (UI).
-- [ ] Sincronización (WorkManager) + cliente REST a Supabase.
 
 **Backend**
 - [x] `attribute_sales` (regla "primer mueble").
