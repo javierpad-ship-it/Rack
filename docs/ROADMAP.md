@@ -35,7 +35,8 @@
 - [x] Tests del parser de Excel (`web/src/lib/import/parseExcel.test.ts`).
 - [x] Test de semana ISO en web y Android.
 - [x] Test SQL de atribución + rotación + almacén (`supabase/tests/attribution_test.sql`).
-- [ ] Guía de despliegue (`docs/DEPLOY.md`).
+- [x] Guía de despliegue (`docs/DEPLOY.md`).
+- [x] CI básica de tests de la web (`.github/workflows/ci.yml`).
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
