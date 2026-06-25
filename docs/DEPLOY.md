@@ -23,6 +23,7 @@ Objetivo: simple y económico para 10-50 tiendas.
 4. Anotar de Project Settings > API: `Project URL`, `anon key` y `service_role key`.
 
 > El test de la lógica se corre con: `psql "$DATABASE_URL" -f supabase/tests/attribution_test.sql`.
+> Datos de demo (opcional) para probar de punta a punta: `psql "$DATABASE_URL" -f supabase/seed.sql`.
 
 ## 2. Web (Vercel)
 

@@ -37,6 +37,7 @@
 - [x] Test SQL de atribución + rotación + almacén (`supabase/tests/attribution_test.sql`).
 - [x] Guía de despliegue (`docs/DEPLOY.md`).
 - [x] CI básica de tests de la web (`.github/workflows/ci.yml`).
+- [x] Datos de demo (`supabase/seed.sql`).
 
 ## Fase 2 — Automatización / analítica
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
