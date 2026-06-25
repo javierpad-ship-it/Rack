@@ -54,6 +54,8 @@ Diseño detallado en `docs/FASE2_DISENO.md`.
 - [ ] Deducción automática de almacén.
 - [x] Alertas (`store_alerts()` + `/alerts`): reposición, mueble sin escanear, caída de venta.
 - [x] Analítica avanzada: tendencias (`fixture_trends()` + `/trends`) y ranking (`fixture_ranking()`).
+- [x] Proyección mensual de rotación (`fixture_monthly_metrics()` + `/monthly`), ingesta diaria.
+- [ ] Programar ingesta diaria con pg_cron (al conectar el POS real).
 
 ## Pendientes funcionales a confirmar
 - Formato/columnas de los Excel (catálogo, ventas, stock total).

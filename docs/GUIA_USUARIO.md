@@ -22,6 +22,8 @@ Hace el relevamiento semanal.
 Controla el avance y el rendimiento de su tienda.
 - **Cobertura**: qué muebles ya se escanearon esta semana y cuáles faltan.
 - **Reportes**: venta por mueble, comparativa semana a semana, heatmap y ventas "sin mueble".
+- **Mensual**: proyección de venta y rotación del mes a partir de lo acumulado hasta hoy.
+- **Tendencias** y **Alertas**: evolución por mueble y avisos (reposición, sin escanear, caída de venta).
 
 ## Administrador central
 Configura todo y carga los datos.
@@ -45,3 +47,5 @@ Solo lectura de **Reportes** y **Dashboard** de todas las tiendas.
 - **Almacén (deducido):** stock total de la tienda − unidades en piso.
 - **Semana:** semana ISO (ej. `2026-W26`).
 - **Ventas sin mueble:** SKUs vendidos que no se escanearon en ningún mueble esa semana.
+- **Proyección mensual:** venta acumulada del mes extrapolada a fin de mes (lineal por días corridos).
+  La rotación mensual usa el último mueble escaneado y el último stock expuesto del mes.

@@ -15,6 +15,11 @@ export function isoWeek(date: Date = new Date()): string {
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
+// Mes calendario en formato 'YYYY-MM' (para la proyección mensual).
+export function currentMonth(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 // Semana previa a una semana ISO dada (para comparativas semana a semana).
 export function previousIsoWeek(week: string): string {
   const m = week.match(/^(\d{4})-W(\d{2})$/);

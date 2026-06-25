@@ -14,6 +14,7 @@ const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
   { href: '/alerts', label: 'Alertas', roles: ['admin', 'analista', 'encargado'] },
   { href: '/reports', label: 'Reportes', roles: ['admin', 'analista', 'encargado'] },
   { href: '/trends', label: 'Tendencias', roles: ['admin', 'analista', 'encargado'] },
+  { href: '/monthly', label: 'Mensual', roles: ['admin', 'analista', 'encargado'] },
   { href: '/users', label: 'Usuarios', roles: ['admin'] },
 ];
 

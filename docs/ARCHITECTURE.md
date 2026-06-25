@@ -55,6 +55,20 @@ Implementada en `supabase/migrations/0002_attribution.sql` como
 `recalc_store_warehouse(p_store_id, p_week)` deduce el almacén:
 `store_stock.total_units − Σ scan_lines.cantidad del piso`.
 
+## Proyección mensual
+
+Vista mensual proyectada (además de la semanal). En `supabase/migrations/0010_monthly.sql`,
+`fixture_monthly_metrics(p_store_id, p_month)`:
+
+- **Semana → mes:** una semana pertenece al mes de su **jueves ISO** (`iso_week_thursday()`).
+- **Atribución:** la venta del mes de un SKU va al **último mueble escaneado** del mes (mayor `scanned_at`).
+- **Stock expuesto:** el del **último escaneo** del mes por mueble.
+- **Proyección lineal por días corridos:** `proyectado = mtd × días_del_mes / días_transcurridos`.
+  Mes en curso → días hasta hoy; mes pasado → mes completo.
+- **Rotación proyectada** = unidades proyectadas / stock expuesto.
+
+La ingesta diaria (Fase 2) solo refresca la venta de la semana en curso; la proyección se recalcula on-demand.
+
 ## Seguridad (RLS)
 
 - `admin` y `analista`: todas las tiendas (analista solo lectura).

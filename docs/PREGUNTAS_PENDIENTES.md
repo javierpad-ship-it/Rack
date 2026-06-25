@@ -37,3 +37,8 @@
   `supabase/migrations/0006_product_aliases.sql`, `web/src/app/(dashboard)/import/actions.ts`.
 - **2026-06-25** — Fase 2: el adaptador POS es una **plantilla genérica** (`supabase/functions/ingest-sales`);
   el mapeo real (endpoint, auth, formato de respuesta) se completa al conocer el POS del cliente.
+- **2026-06-25** — Proyección mensual: una semana se asigna al mes de su **jueves ISO**
+  (`iso_week_thursday`); proyección **lineal por días corridos**; atribución por **último mueble**;
+  stock expuesto del **último escaneo** del mes. Confirmar si la "semana comercial" cambiaría este anclaje.
+  Archivos: `supabase/migrations/0010_monthly.sql`, `web/src/app/(dashboard)/monthly/page.tsx`.
+- **Ingesta diaria confirmada** por el usuario; queda programar el job (pg_cron) al conectar el POS.
