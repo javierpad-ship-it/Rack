@@ -53,7 +53,7 @@ Diseño detallado en `docs/FASE2_DISENO.md`.
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.
 - [x] Alertas (`store_alerts()` + `/alerts`): reposición, mueble sin escanear, caída de venta.
-- [ ] Analítica avanzada: tendencias (series temporales) y rankings.
+- [x] Analítica avanzada: tendencias (`fixture_trends()` + `/trends`) y ranking (`fixture_ranking()`).
 
 ## Pendientes funcionales a confirmar
 - Formato/columnas de los Excel (catálogo, ventas, stock total).
