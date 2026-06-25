@@ -13,8 +13,8 @@
 - [x] Import Excel: catálogo, ventas, stock total (con `import_logs`) + disparo de atribución.
 - [x] CRUD tiendas / muebles / usuarios.
 - [x] Subir plano + ubicar pines (rol Visual). Storage bucket `layouts` (`0003_storage.sql`).
-- [ ] Reportes: venta por mueble, comparativa semana a semana.
-- [ ] Heatmap sobre el plano.
+- [x] Reportes: venta por mueble, comparativa semana a semana (+ almacén deducido).
+- [x] Heatmap sobre el plano.
 
 **App Android**
 - [ ] Login (Supabase Auth).
