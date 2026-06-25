@@ -11,8 +11,8 @@ sobre el **plano de la tienda** (mapa de calor).
 | Carpeta      | Qué es | Tecnología |
 |--------------|--------|------------|
 | `supabase/`  | Base de datos, RLS, lógica de negocio (atribución y métricas) | PostgreSQL + Supabase |
-| `web/`       | Web de administración (config, import Excel, reportes, plano) | Next.js + TypeScript |
-| `mobile/`    | App Android para equipos Honeywell con scanner (offline-first) | Kotlin + Room |
+| `web/`       | Web de administración (config, import Excel, reportes, plano) | Next.js + TypeScript (Railway) |
+| `mobile/`    | App Android para Honeywell ScanPal EDA52 (offline-first) | Kotlin + Room |
 | `docs/`      | Documentación funcional y de despliegue | Markdown |
 
 ## Conceptos clave

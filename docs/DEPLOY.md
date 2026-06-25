@@ -1,20 +1,21 @@
 # Guía de despliegue
 
-Stack: **Supabase** (DB + Auth + Storage) · **Vercel** (web) · **APK** (app Android).
+Stack: **Supabase** (DB + Auth + Storage) · **Railway** (web) · **APK** (app Android, por CI).
 Objetivo: simple y económico para 10-50 tiendas.
+
+> **Sin entorno local.** Todo se hace desde el navegador (dashboards de Railway y Supabase) o por
+> **GitHub Actions**. No hace falta instalar Node, Gradle ni la CLI de Supabase en ninguna PC.
 
 ## 1. Supabase (backend)
 
 1. Crear un proyecto en https://supabase.com (región más cercana).
-2. Aplicar las migraciones (en orden) desde el SQL Editor o la CLI:
-   - `supabase/migrations/0001_init.sql`
-   - `supabase/migrations/0002_attribution.sql`
-   - `supabase/migrations/0003_storage.sql`
-   Con la CLI:
-   ```bash
-   supabase link --project-ref <ref>
-   supabase db push          # aplica las migraciones del repo
-   ```
+2. **Aplicar las migraciones en orden** (`supabase/migrations/0001_*.sql` … `0010_*.sql`). Dos vías,
+   ambas **sin PC**:
+   - **SQL Editor (cero setup):** abrir cada archivo del repo y pegar su contenido, en orden, en
+     Project > SQL Editor > New query > Run.
+   - **CI (automatizado):** disparar el workflow **`Supabase migrations`** (Actions >
+     `supabase.yml` > Run workflow). Hace `supabase db push` y redeploya la función `ingest-sales`.
+     Requiere los secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`.
 3. Crear el **usuario administrador inicial**: Authentication > Users > Add user.
    Luego en el SQL Editor, asignarle el rol:
    ```sql
@@ -22,41 +23,36 @@ Objetivo: simple y económico para 10-50 tiendas.
    ```
 4. Anotar de Project Settings > API: `Project URL`, `anon key` y `service_role key`.
 
-> El test de la lógica se corre con: `psql "$DATABASE_URL" -f supabase/tests/attribution_test.sql`.
-> Datos de demo (opcional) para probar de punta a punta: `psql "$DATABASE_URL" -f supabase/seed.sql`.
+> Tests de la lógica SQL (opcional, desde el SQL Editor o CI): pegar/aplicar
+> `supabase/tests/attribution_test.sql` y `supabase/tests/monthly_test.sql`. Datos de demo:
+> `supabase/seed.sql`.
 
-## 2. Web (Vercel)
+## 2. Web (Railway)
 
-1. Importar el repo en Vercel y setear **Root Directory = `web`**.
-2. Variables de entorno (Project Settings > Environment Variables):
+La web Next.js vive en `web/` y apunta a Supabase Cloud por variables de entorno.
+
+1. En https://railway.app: **New Project > Deploy from GitHub repo** y elegir este repo.
+2. En el servicio, **Settings > Root Directory = `web`**. El build usa **Nixpacks** (autodetecta
+   Next.js); el build/start ya están fijados en `web/railway.json` (`next build` + `next start -p $PORT`).
+3. **Variables** (Service > Variables), las mismas que consume el código:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (solo server-side; nunca exponer)
-3. Deploy. Build command `next build` (autodetectado).
+   - `SUPABASE_SERVICE_ROLE_KEY` (solo server-side; Railway la mantiene secreta, nunca exponer)
+4. Deploy. Cuando quede *healthy*, **Settings > Networking > Generate Domain** para obtener la URL
+   pública. Cada push a la rama conectada redeploya automáticamente.
 
-Local:
-```bash
-cd web && npm install && cp .env.local.example .env.local && npm run dev
-```
+## 3. App Android (APK por CI)
 
-## 3. App Android (APK)
+Railway no compila ni hospeda apps Android. El APK lo genera **GitHub Actions** (sin PC):
 
-1. En `mobile/local.properties` agregar:
-   ```
-   SUPABASE_URL=https://<ref>.supabase.co
-   SUPABASE_ANON_KEY=<anon-key>
-   ```
-2. Generar el wrapper una vez (entorno con Gradle):
-   ```bash
-   cd mobile && gradle wrapper --gradle-version 8.7
-   ```
-3. Compilar:
-   ```bash
-   ./gradlew assembleDebug      # APK en app/build/outputs/apk/debug/
-   ```
-4. Instalar en el equipo Honeywell (`adb install` o MDM).
-5. **Scanner Honeywell:** en el equipo, Settings > Scanning, perfil de la app: activar salida por
-   **Intent** apuntando a la acción de `HoneywellScannerProvider`. Sin esto, usar el campo de captura (wedge).
+1. Cargar los secrets del repo: `SUPABASE_URL` (`https://<ref>.supabase.co`) y `SUPABASE_ANON_KEY`.
+2. Disparar el workflow **`Android APK`** (Actions > `android.yml` > Run workflow, o con cualquier push
+   que toque `mobile/**`). El job genera el wrapper, corre los tests JVM, compila e inyecta esos secrets.
+3. Descargar el artefacto **`rack-debug-apk`** (`app-debug.apk`) desde la página del run.
+4. Instalar en cada **Honeywell ScanPal EDA52** por **MDM** o `adb install app-debug.apk`.
+5. **Scanner:** no requiere configurar el equipo a mano — `HoneywellScannerProvider` reclama el imager
+   (claim/release) y redirige las lecturas a la app. Si algo falla, usar el campo de captura (wedge).
+   Detalle en `docs/SCANNER_EDA52.md`.
 
 ## 4. Puesta en marcha (operativa)
 

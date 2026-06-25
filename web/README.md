@@ -25,4 +25,5 @@ npm run dev
 - `src/app/(dashboard)/` — área autenticada (resumen, import, etc.).
 
 ## Despliegue
-Pensado para **Vercel** (env vars del `.env.local.example`). Supabase como backend.
+Pensado para **Railway** (Root Directory `web`, build Nixpacks vía `railway.json`; env vars del
+`.env.local.example`). Supabase Cloud como backend. Ver `docs/DEPLOY.md`.

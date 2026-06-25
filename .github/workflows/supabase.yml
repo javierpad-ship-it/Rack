@@ -1,0 +1,30 @@
+name: Supabase migrations
+
+# Aplica las migraciones del repo al proyecto Supabase Cloud SIN necesitar la CLI
+# en la PC. Disparo manual desde la pestaña Actions de GitHub.
+on:
+  workflow_dispatch:
+
+jobs:
+  db-push:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Push migrations
+        run: supabase db push
+
+      # Redeploy de la Edge Function de ingesta (adaptador POS). Opcional.
+      - name: Deploy ingest-sales function
+        run: supabase functions deploy ingest-sales --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
