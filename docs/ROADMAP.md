@@ -52,7 +52,8 @@ Diseño detallado en `docs/FASE2_DISENO.md`.
 - [ ] Implementar el adaptador del POS real del cliente + programar con pg_cron.
 - [ ] Integración API POS/ERP (ventas, stock, catálogo).
 - [ ] Deducción automática de almacén.
-- [ ] Analítica avanzada: rotación, alertas, tendencias.
+- [x] Alertas (`store_alerts()` + `/alerts`): reposición, mueble sin escanear, caída de venta.
+- [ ] Analítica avanzada: tendencias (series temporales) y rankings.
 
 ## Pendientes funcionales a confirmar
 - Formato/columnas de los Excel (catálogo, ventas, stock total).
