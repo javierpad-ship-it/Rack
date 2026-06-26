@@ -360,6 +360,70 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 /* ============================================================================
+   Etiquetas / stickers de muebles
+   ============================================================================ */
+.spark { color: var(--brand-bright); }
+
+.sheet { display: flex; flex-wrap: wrap; gap: 8px; }
+.sticker {
+  width: 62mm;
+  box-sizing: border-box;
+  border: 1px dashed var(--border-2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  break-inside: avoid;
+}
+.sticker-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sticker-brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.7rem;
+  color: var(--brand-deep);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.sticker-store {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  text-align: right;
+}
+.sticker-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #000;
+  line-height: 1.1;
+}
+.sticker-barcode { margin-top: 2px; }
+.sticker-barcode svg { width: 100%; height: auto; display: block; }
+.sticker-code {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #000;
+}
+
+@media print {
+  .side, .no-print { display: none !important; }
+  .content { padding: 0 !important; max-width: none !important; }
+  body { background: #fff !important; }
+  h1, .eyebrow { display: none !important; }
+  .sheet { gap: 0; }
+  .sticker {
+    border-color: #999;
+    border-radius: 0;
+    margin: 0 3mm 3mm 0;
+  }
+}
+
+/* ============================================================================
    Accesibilidad
    ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
