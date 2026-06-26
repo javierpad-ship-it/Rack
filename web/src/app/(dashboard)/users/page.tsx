@@ -20,11 +20,9 @@ export default function UsersPage() {
   const [storeId, setStoreId] = useState<string>('');
 
   const load = useCallback(async () => {
-    try {
-      setUsers(await listUsers());
-    } catch (e) {
-      setError((e as Error).message);
-    }
+    const res = await listUsers();
+    if (res.ok) setUsers(res.data);
+    else setError(res.error);
   }, []);
 
   useEffect(() => {
@@ -39,15 +37,15 @@ export default function UsersPage() {
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    try {
-      await createUser({ email, password, fullName, role, storeId: storeId || null });
-      setEmail('');
-      setPassword('');
-      setFullName('');
-      load();
-    } catch (err) {
-      setError((err as Error).message);
+    const res = await createUser({ email, password, fullName, role, storeId: storeId || null });
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    setEmail('');
+    setPassword('');
+    setFullName('');
+    load();
   }
 
   return (
@@ -101,7 +99,8 @@ export default function UsersPage() {
                 <select
                   value={u.role}
                   onChange={async (e) => {
-                    await updateUser(u.id, e.target.value as UserRole, u.store_id);
+                    const res = await updateUser(u.id, e.target.value as UserRole, u.store_id);
+                    if (!res.ok) setError(res.error);
                     load();
                   }}
                 >
@@ -116,7 +115,8 @@ export default function UsersPage() {
                 <select
                   value={u.store_id ?? ''}
                   onChange={async (e) => {
-                    await updateUser(u.id, u.role, e.target.value || null);
+                    const res = await updateUser(u.id, u.role, e.target.value || null);
+                    if (!res.ok) setError(res.error);
                     load();
                   }}
                 >
@@ -133,7 +133,8 @@ export default function UsersPage() {
                   className="secondary"
                   onClick={async () => {
                     if (confirm('¿Eliminar usuario?')) {
-                      await deleteUser(u.id);
+                      const res = await deleteUser(u.id);
+                      if (!res.ok) setError(res.error);
                       load();
                     }
                   }}
