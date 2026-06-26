@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Rack One · Lukers',
   description: 'Rotación y venta por mueble — Lukers',
+  icons: { icon: '/brand/rack-one-icon.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import SignOutButton from './SignOutButton';
 import NavLinks from './NavLinks';
+import BrandLogo from '@/components/BrandLogo';
 
 const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
   { href: '/', label: 'Resumen', roles: ['admin', 'analista', 'visual', 'encargado', 'operario'] },
@@ -39,8 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div style={{ display: 'grid', gridTemplateColumns: '232px 1fr', minHeight: '100vh' }}>
       <aside className="side">
         <div className="brand">
-          <span className="glyph">1E</span>
-          <span className="brand-name">Rack One</span>
+          <BrandLogo variant="sidebar" />
           <span className="brand-by">Lukers</span>
         </div>
         <NavLinks items={items.map(({ href, label }) => ({ href, label }))} />

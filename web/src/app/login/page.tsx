@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,10 +27,7 @@ export default function LoginPage() {
     <main className="auth">
       <section className="auth-brand">
         <div className="lockup">
-          <span className="glyph">1E</span>
-          <span className="mark">
-            Rack<span className="on">One</span>
-          </span>
+          <BrandLogo variant="login" />
         </div>
         <p className="slogan">
           Rotación y venta por mueble, <em>en foco</em>.
