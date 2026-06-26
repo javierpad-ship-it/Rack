@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Tema de la Activity. La UI real es Jetpack Compose (Material3 vía Compose),
+      así que acá solo necesitamos un tema base sin ActionBar. Parent del framework
+      para no depender de la librería Material (View).
+    -->
+    <style name="Theme.RackOne" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#102A43</item>
+        <item name="android:windowBackground">#FFFFFFFF</item>
+    </style>
+</resources>

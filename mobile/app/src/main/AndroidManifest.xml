@@ -6,9 +6,9 @@
 
     <application
         android:allowBackup="true"
-        android:label="Rack"
+        android:label="Rack One"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        android:theme="@style/Theme.RackOne">
 
         <activity
             android:name=".ui.MainActivity"
