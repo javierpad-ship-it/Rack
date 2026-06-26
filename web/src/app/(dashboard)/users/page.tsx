@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Store, UserRole } from '@/lib/types';
 import { listUsers, createUser, updateUser, deleteUser, type UserRow } from './actions';
+import PasswordInput from '@/components/PasswordInput';
 
 const ROLES: UserRole[] = ['admin', 'analista', 'visual', 'encargado', 'operario'];
 
@@ -54,13 +55,7 @@ export default function UsersPage() {
       <form className="panel row" onSubmit={onCreate} style={{ marginBottom: 16 }}>
         <input placeholder="Nombre" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" required />
         <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
           {ROLES.map((r) => (
             <option key={r} value={r}>

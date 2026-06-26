@@ -171,6 +171,25 @@ button.secondary:hover { background: var(--surface-2); filter: none; }
 
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
+/* Campo de contraseña con ojito */
+.pwd { position: relative; display: block; }
+.pwd input { width: 100%; padding-right: 40px; }
+.pwd .toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+}
+.pwd .toggle:hover { background: transparent; filter: none; color: var(--brand); }
+.pwd .toggle:active { transform: translateY(-50%); }
+
 /* --- Tablas ------------------------------------------------------------ */
 table { width: 100%; border-collapse: collapse; }
 table.panel { padding: 6px 4px; }
