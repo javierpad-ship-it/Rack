@@ -35,6 +35,10 @@ interface RackDao {
     @Query("SELECT * FROM scan_lines WHERE sessionUid = :uid ORDER BY sku")
     suspend fun linesForSession(uid: String): List<ScanLineEntity>
 
+    /** Última sesión local de un mueble en una semana (para sumar/reiniciar). */
+    @Query("SELECT * FROM scan_sessions WHERE fixtureId = :fixtureId AND week = :week ORDER BY scannedAt DESC LIMIT 1")
+    suspend fun lastSessionFor(fixtureId: String, week: String): ScanSessionEntity?
+
     @Query("SELECT * FROM scan_sessions WHERE synced = 0 ORDER BY scannedAt")
     suspend fun pendingSessions(): List<ScanSessionEntity>
 

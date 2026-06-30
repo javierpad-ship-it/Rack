@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,21 @@ import androidx.compose.ui.unit.dp
 fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
     val state by vm.state.collectAsState()
     var wedge by remember { mutableStateOf("") }
+
+    if (state.priorPrompt != null) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Mueble ya escaneado") },
+            text = {
+                Text(
+                    "Este mueble ya tiene un conteo de ${state.priorPrompt} ítem(s) esta semana. " +
+                        "¿Querés sumar al conteo anterior o reiniciarlo?",
+                )
+            },
+            confirmButton = { Button(onClick = { vm.continueAdding() }) { Text("Sumar") } },
+            dismissButton = { OutlinedButton(onClick = { vm.restartCount() }) { Text("Reiniciar") } },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(

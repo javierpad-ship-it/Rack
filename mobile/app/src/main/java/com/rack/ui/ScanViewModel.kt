@@ -23,6 +23,9 @@ data class ScanUiState(
     val lines: List<ScanLineUi> = emptyList(),
     val message: String? = null,
     val pendingCount: Int = 0,
+    // Si el mueble ya tiene conteo esta semana, cantidad de ítems del conteo
+    // anterior; mientras no sea null, la UI muestra el diálogo Sumar/Reiniciar.
+    val priorPrompt: Int? = null,
 )
 
 /**
@@ -40,24 +43,66 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
 
     private val counts = linkedMapOf<String, Int>()
     private val names = mutableMapOf<String, String>()
+    // Líneas del conteo anterior de esta semana, en espera de Sumar/Reiniciar.
+    private var pendingPrior: List<ScanLineEntity> = emptyList()
 
     init {
         refreshPending()
     }
 
     fun onScan(code: String) {
+        // Mientras esté el diálogo Sumar/Reiniciar, no procesar lecturas.
+        if (_state.value.priorPrompt != null) {
+            setMessage("Elegí Sumar o Reiniciar antes de seguir escaneando")
+            return
+        }
         viewModelScope.launch {
             if (_state.value.fixture == null) {
                 val fixture = db.dao().findFixtureByBarcode(code)
                 if (fixture == null) {
                     setMessage("Mueble no reconocido: $code")
                 } else {
-                    _state.value = _state.value.copy(fixture = fixture, message = "Mueble: ${fixture.name}")
+                    // ¿Ya hay un conteo de este mueble esta semana en este equipo?
+                    val prior = db.dao().lastSessionFor(fixture.id, IsoWeek.of())
+                    val priorLines = if (prior != null) db.dao().linesForSession(prior.clientUid) else emptyList()
+                    if (priorLines.isNotEmpty()) {
+                        pendingPrior = priorLines
+                        _state.value = _state.value.copy(
+                            fixture = fixture,
+                            priorPrompt = priorLines.size,
+                            message = "Este mueble ya fue escaneado esta semana.",
+                        )
+                    } else {
+                        _state.value = _state.value.copy(fixture = fixture, message = "Mueble: ${fixture.name}")
+                    }
                 }
             } else {
                 addProduct(code)
             }
         }
+    }
+
+    /** El operario elige SUMAR: precarga el conteo anterior y sigue agregando. */
+    fun continueAdding() {
+        viewModelScope.launch {
+            pendingPrior.forEach { line ->
+                val product = db.dao().findProduct(line.sku)
+                names[line.sku] = product?.name ?: "(desconocido)"
+                counts[line.sku] = (counts[line.sku] ?: 0) + line.quantity
+            }
+            pendingPrior = emptyList()
+            _state.value = _state.value.copy(priorPrompt = null, message = "Sumando al conteo anterior")
+            emitLines(null)
+        }
+    }
+
+    /** El operario elige REINICIAR: empieza el conteo de cero. */
+    fun restartCount() {
+        pendingPrior = emptyList()
+        counts.clear()
+        names.clear()
+        _state.value = _state.value.copy(priorPrompt = null, message = "Conteo reiniciado")
+        emitLines(null)
     }
 
     private suspend fun addProduct(code: String) {
@@ -108,6 +153,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     fun reset() {
         counts.clear()
         names.clear()
+        pendingPrior = emptyList()
         _state.value = ScanUiState(pendingCount = _state.value.pendingCount)
     }
 
