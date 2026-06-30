@@ -108,7 +108,7 @@ export default function LayoutPlanPage() {
           <p className="muted" style={{ fontSize: 12 }}>
             Elegí uno y hacé clic en el plano para ubicarlo.
           </p>
-          <div style={{ display: 'grid', gap: 4 }}>
+          <div style={{ display: 'grid', gap: 4, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
             {fixtures.map((f) => (
               <button
                 key={f.id}
