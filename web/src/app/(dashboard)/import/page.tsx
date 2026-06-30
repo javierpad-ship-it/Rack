@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
-import { parseCatalog, parseSales, parseStock } from '@/lib/import/parseExcel';
-import { importCatalog, importSales, importStock } from './actions';
+import { parseCatalog, parseSales, parseStock, parseSalesDaily } from '@/lib/import/parseExcel';
+import { importCatalog, importSales, importStock, importSalesDaily } from './actions';
 import type { Store } from '@/lib/types';
 
-type Kind = 'catalog' | 'sales' | 'stock';
+type Kind = 'catalog' | 'sales_daily' | 'sales' | 'stock';
 
 export default function ImportPage() {
   const supabase = createClient();
@@ -41,6 +41,11 @@ export default function ImportPage() {
         const { rows, errors } = parseCatalog(buf);
         const r = await importCatalog(rows);
         setStatus(`Catálogo: ${r.ok} productos. ${errors.length} filas con error.`);
+      } else if (kind === 'sales_daily') {
+        if (!storeId) throw new Error('Elegí una tienda');
+        const { rows, errors } = parseSalesDaily(buf);
+        const r = await importSalesDaily(storeId, rows);
+        setStatus(`Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error.`);
       } else if (kind === 'sales') {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseSales(buf);
@@ -60,7 +65,8 @@ export default function ImportPage() {
     }
   }
 
-  const needsStoreWeek = kind !== 'catalog';
+  const needsStore = kind !== 'catalog';
+  const needsWeek = kind === 'sales' || kind === 'stock';
 
   return (
     <div>
@@ -74,12 +80,13 @@ export default function ImportPage() {
           <br />
           <select value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
             <option value="catalog">Catálogo de productos</option>
-            <option value="sales">Ventas</option>
+            <option value="sales_daily">Ventas (diario, con fecha)</option>
+            <option value="sales">Ventas (por semana)</option>
             <option value="stock">Stock total</option>
           </select>
         </label>
 
-        {needsStoreWeek && (
+        {needsStore && (
           <div className="row">
             <label>
               Tienda
@@ -92,12 +99,20 @@ export default function ImportPage() {
                 ))}
               </select>
             </label>
-            <label>
-              Semana (ISO)
-              <br />
-              <input value={week} onChange={(e) => setWeek(e.target.value)} />
-            </label>
+            {needsWeek && (
+              <label>
+                Semana (ISO)
+                <br />
+                <input value={week} onChange={(e) => setWeek(e.target.value)} />
+              </label>
+            )}
           </div>
+        )}
+        {kind === 'sales_daily' && (
+          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+            La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Reimportar el
+            mismo día reemplaza esos datos. Se recalcula la semana afectada automáticamente.
+          </p>
         )}
 
         <label>

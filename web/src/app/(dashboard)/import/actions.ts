@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { CatalogRow, SalesRow, StockRow } from '@/lib/import/parseExcel';
+import type { CatalogRow, SalesRow, StockRow, SalesDailyRow } from '@/lib/import/parseExcel';
 
 // Verifica que el usuario actual sea admin antes de operaciones masivas.
 async function assertAdmin() {
@@ -97,6 +97,52 @@ export async function importSales(storeId: string, week: string, rawRows: SalesR
   const { error } = await admin.rpc('attribute_sales', { p_store_id: storeId, p_week: week });
   if (error) throw new Error(`attribute_sales: ${error.message}`);
   await logImport({ kind: 'sales', storeId, week, rowsOk: rows.length, rowsError: 0, createdBy: uid });
+  return { ok: rows.length };
+}
+
+export async function importSalesDaily(storeId: string, rawRows: SalesDailyRow[]) {
+  const uid = await assertAdmin();
+  if (rawRows.length === 0) return { ok: 0 };
+  const admin = createAdminClient();
+
+  // Resolver alias de SKU (Fase 2) y agregar por (sku, fecha).
+  const { data: aliasData } = await admin.from('product_aliases').select('alias, sku');
+  const aliasMap = new Map((aliasData ?? []).map((a) => [a.alias as string, a.sku as string]));
+
+  const agg = new Map<string, SalesDailyRow>();
+  let from = '9999-12-31';
+  let to = '0000-01-01';
+  for (const r of rawRows) {
+    const sku = aliasMap.get(r.sku) ?? r.sku;
+    const key = `${r.sale_date}|${sku}`;
+    const prev = agg.get(key);
+    if (prev) {
+      prev.units += r.units;
+      prev.amount += r.amount;
+      prev.margin += r.margin;
+    } else {
+      agg.set(key, { ...r, sku });
+    }
+    if (r.sale_date < from) from = r.sale_date;
+    if (r.sale_date > to) to = r.sale_date;
+  }
+  const rows = [...agg.values()];
+
+  await upsertChunked(
+    'sales_daily',
+    rows.map((r) => ({ store_id: storeId, ...r })),
+    'store_id,sku,sale_date',
+  );
+
+  // Recalcular el agregado semanal `sales` + atribución de las semanas afectadas.
+  const { error } = await admin.rpc('recompute_sales_range', {
+    p_store_id: storeId,
+    p_from: from,
+    p_to: to,
+  });
+  if (error) throw new Error(`recompute: ${error.message}`);
+
+  await logImport({ kind: 'sales_daily', storeId, week: null, rowsOk: rows.length, rowsError: 0, createdBy: uid });
   return { ok: rows.length };
 }
 
