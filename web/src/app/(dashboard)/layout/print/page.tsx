@@ -42,6 +42,91 @@ export default function PlanPrintPage() {
   const placed = fixtures.filter((f) => f.pin_x != null && f.pin_y != null);
   const unplaced = fixtures.filter((f) => f.pin_x == null || f.pin_y == null);
 
+  // Descarga el plano con los pines y nombres "quemados" como JPG a resolución
+  // completa de la imagen original (evita el descuadre de la impresión web).
+  function downloadJpg() {
+    if (!layout?.image_url) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const W = img.naturalWidth;
+      const H = img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, W, H);
+
+      const base = Math.max(W, H);
+      const dotR = Math.max(6, base * 0.006);
+      const fontSize = Math.max(14, base * 0.015);
+      ctx.font = `700 ${fontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.textBaseline = 'middle';
+
+      const padX = fontSize * 0.5;
+      const boxH = fontSize + fontSize * 0.7;
+      const r = Math.min(8, boxH / 2);
+
+      placed.forEach((f) => {
+        const x = (f.pin_x as number) * W;
+        const y = (f.pin_y as number) * H;
+        const label = f.name;
+        const tw = ctx.measureText(label).width;
+        const boxW = tw + padX * 2;
+
+        // Etiqueta a la derecha del punto; si se sale, va a la izquierda.
+        let bx = x + dotR + 6;
+        if (bx + boxW > W - 4) bx = x - dotR - 6 - boxW;
+        const by = y - boxH / 2;
+
+        // caja
+        ctx.beginPath();
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(bx, by, boxW, boxH, r);
+        } else {
+          ctx.rect(bx, by, boxW, boxH);
+        }
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, base * 0.0012);
+        ctx.strokeStyle = '#CFD8EA';
+        ctx.stroke();
+        ctx.fillStyle = '#000000';
+        ctx.fillText(label, bx + padX, y);
+
+        // punto
+        ctx.beginPath();
+        ctx.arc(x, y, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = '#2B5BE2';
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, dotR * 0.5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+      });
+
+      try {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `plano-${store?.code ?? 'tienda'}.jpg`;
+            a.click();
+            URL.revokeObjectURL(url);
+          },
+          'image/jpeg',
+          0.92,
+        );
+      } catch {
+        alert('No se pudo exportar (la imagen del plano bloquea la exportación por CORS).');
+      }
+    };
+    img.onerror = () => alert('No se pudo cargar la imagen del plano para exportar.');
+    img.src = layout.image_url;
+  }
+
   return (
     <div>
       <div className="row no-print" style={{ marginBottom: 14 }}>
@@ -56,8 +141,11 @@ export default function PlanPrintPage() {
             ))}
           </select>
         </label>
-        <button onClick={() => window.print()} disabled={!layout?.image_url}>
-          Imprimir plano
+        <button onClick={downloadJpg} disabled={!layout?.image_url}>
+          Descargar JPG
+        </button>
+        <button className="secondary" onClick={() => window.print()} disabled={!layout?.image_url}>
+          Imprimir
         </button>
       </div>
 
