@@ -441,6 +441,23 @@ tbody tr:last-child td { border-bottom: none; }
   color: #000;
 }
 
+/* Celda con checkbox de selección */
+.label-cell { position: relative; }
+.label-pick {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-2);
+  border-radius: 5px;
+  padding: 1px 4px;
+  line-height: 1;
+  cursor: pointer;
+}
+.label-pick input { cursor: pointer; vertical-align: middle; }
+.label-cell.unselected { opacity: 0.3; }
+
 /* Formato Zebra: etiqueta de 51 × 24.5 mm, 2 por fila, separación 3 mm. */
 .sheet.zebra {
   display: grid;
@@ -479,6 +496,9 @@ tbody tr:last-child td { border-bottom: none; }
   .content { padding: 0 !important; max-width: none !important; }
   body { background: #fff !important; }
   h1, .eyebrow { display: none !important; }
+
+  /* Solo se imprimen las etiquetas seleccionadas */
+  .label-cell.unselected { display: none !important; }
 
   /* A4: recuadros de recorte */
   .sheet.a4 { gap: 0; }

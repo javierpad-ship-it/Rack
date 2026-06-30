@@ -12,6 +12,7 @@ export default function LabelsPage() {
   const [floor, setFloor] = useState<number | 'all'>('all');
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [format, setFormat] = useState<'zebra' | 'a4'>('zebra');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const selectedStore = stores.find((s) => s.id === storeId);
   const floorCount = selectedStore?.floors ?? 1;
@@ -39,6 +40,22 @@ export default function LabelsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Al cambiar el listado (tienda/piso), seleccionar todas por defecto.
+  useEffect(() => {
+    setSelected(new Set(fixtures.map((f) => f.id)));
+  }, [fixtures]);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  const selectAll = () => setSelected(new Set(fixtures.map((f) => f.id)));
+  const selectNone = () => setSelected(new Set());
 
   return (
     <div>
@@ -77,9 +94,17 @@ export default function LabelsPage() {
             <option value="a4">A4 (hoja)</option>
           </select>
         </label>
-        <span className="muted">{fixtures.length} etiqueta(s)</span>
-        <button onClick={() => window.print()} disabled={fixtures.length === 0}>
-          Imprimir
+        <button type="button" className="secondary" onClick={selectAll} disabled={fixtures.length === 0}>
+          Seleccionar todo
+        </button>
+        <button type="button" className="secondary" onClick={selectNone} disabled={selected.size === 0}>
+          Ninguno
+        </button>
+        <span className="muted">
+          {selected.size} / {fixtures.length} seleccionada(s)
+        </span>
+        <button onClick={() => window.print()} disabled={selected.size === 0}>
+          Imprimir ({selected.size})
         </button>
       </div>
 
@@ -104,20 +129,25 @@ export default function LabelsPage() {
 
       <div className={`sheet ${format}`}>
         {fixtures.map((f) => (
-          <div key={f.id} className={`sticker ${format}`}>
-            <div className="sticker-top">
-              <span className="sticker-brand">
-                Rack One <span className="spark">✦</span>
-              </span>
-              <span className="sticker-store">
-                {selectedStore?.name ?? ''} · Piso {f.floor}
-              </span>
+          <div key={f.id} className={`label-cell ${selected.has(f.id) ? '' : 'unselected'}`}>
+            <label className="label-pick no-print" title="Incluir esta etiqueta">
+              <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)} />
+            </label>
+            <div className={`sticker ${format}`}>
+              <div className="sticker-top">
+                <span className="sticker-brand">
+                  Rack One <span className="spark">✦</span>
+                </span>
+                <span className="sticker-store">
+                  {selectedStore?.name ?? ''} · Piso {f.floor}
+                </span>
+              </div>
+              <div className="sticker-name">{f.name}</div>
+              <div className="sticker-barcode">
+                <Barcode value={f.barcode} />
+              </div>
+              <div className="sticker-code">{f.barcode}</div>
             </div>
-            <div className="sticker-name">{f.name}</div>
-            <div className="sticker-barcode">
-              <Barcode value={f.barcode} />
-            </div>
-            <div className="sticker-code">{f.barcode}</div>
           </div>
         ))}
         {fixtures.length === 0 && (
