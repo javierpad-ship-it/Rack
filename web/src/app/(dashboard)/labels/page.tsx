@@ -11,6 +11,7 @@ export default function LabelsPage() {
   const [storeId, setStoreId] = useState('');
   const [floor, setFloor] = useState<number | 'all'>('all');
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [format, setFormat] = useState<'zebra' | 'a4'>('zebra');
 
   const selectedStore = stores.find((s) => s.id === storeId);
   const floorCount = selectedStore?.floors ?? 1;
@@ -69,20 +70,41 @@ export default function LabelsPage() {
             ))}
           </select>
         </label>
+        <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Formato
+          <select value={format} onChange={(e) => setFormat(e.target.value as 'zebra' | 'a4')}>
+            <option value="zebra">Zebra 51×24.5 mm (2 por fila)</option>
+            <option value="a4">A4 (hoja)</option>
+          </select>
+        </label>
         <span className="muted">{fixtures.length} etiqueta(s)</span>
         <button onClick={() => window.print()} disabled={fixtures.length === 0}>
           Imprimir
         </button>
       </div>
 
+      {format === 'zebra' && (
+        <style>{`@page { size: 105mm 24.5mm; margin: 0; }`}</style>
+      )}
+
       <p className="muted no-print" style={{ fontSize: 13, marginTop: -6 }}>
-        Tip: en el diálogo de impresión, desactivá “Encabezados y pies de página” y usá márgenes
-        mínimos. Cada recuadro punteado es una etiqueta para recortar.
+        {format === 'zebra' ? (
+          <>
+            Zebra: en el diálogo de impresión elegí la impresora Zebra, papel/medio{' '}
+            <b>51 × 24.5 mm</b> (o 105 × 24.5 si imprime de a 2), <b>escala 100%</b>, márgenes{' '}
+            <b>ninguno</b> y desactivá “Encabezados y pies de página”.
+          </>
+        ) : (
+          <>
+            A4: desactivá “Encabezados y pies de página” y usá márgenes mínimos. Cada recuadro es una
+            etiqueta para recortar.
+          </>
+        )}
       </p>
 
-      <div className="sheet">
+      <div className={`sheet ${format}`}>
         {fixtures.map((f) => (
-          <div key={f.id} className="sticker">
+          <div key={f.id} className={`sticker ${format}`}>
             <div className="sticker-top">
               <span className="sticker-brand">
                 Rack One <span className="spark">✦</span>
