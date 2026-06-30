@@ -455,6 +455,45 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 /* ============================================================================
+   Plano imprimible (con nombres de muebles)
+   ============================================================================ */
+.plan-head { margin-bottom: 10px; font-family: var(--font-display); font-size: 1.1rem; color: var(--brand-deep); }
+.plan-wrap { position: relative; display: inline-block; max-width: 100%; }
+.plan-img { display: block; max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; }
+.plan-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.plan-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  flex: none;
+}
+.plan-label {
+  background: #fff;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #000;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+@media print {
+  .plan-img { border: none; }
+  .plan-sheet { page-break-inside: avoid; }
+}
+
+/* ============================================================================
    Accesibilidad
    ============================================================================ */
 @media (prefers-reduced-motion: reduce) {

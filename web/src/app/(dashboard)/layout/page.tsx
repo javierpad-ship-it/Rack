@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { Fixture, Store, StoreLayout } from '@/lib/types';
 
@@ -95,6 +96,9 @@ export default function LayoutPlanPage() {
         <label>
           Subir plano <input type="file" accept="image/*" onChange={onUpload} />
         </label>
+        <Link href="/layout/print">
+          <button type="button" className="secondary">Imprimir con nombres</button>
+        </Link>
         {status && <span className="muted">{status}</span>}
       </div>
 
