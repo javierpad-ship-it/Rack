@@ -10,7 +10,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "pe.lukers.rackone"
+        applicationId = "com.geeksapp.rackone"
         minSdk = 24          // cubre equipos Honeywell con Android 7+
         targetSdk = 34
         versionCode = 1
