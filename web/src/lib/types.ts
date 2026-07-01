@@ -1,6 +1,6 @@
 // Tipos del dominio Rack (espejo del esquema en supabase/migrations).
 
-export type UserRole = 'admin' | 'analista' | 'visual' | 'encargado' | 'operario';
+export type UserRole = 'admin' | 'analista' | 'visual' | 'encargado' | 'operario' | 'reponedor';
 
 export interface Store {
   id: string;

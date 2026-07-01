@@ -46,6 +46,7 @@ class SyncWorker(
                     fixtureId = s.fixtureId,
                     week = s.week,
                     scannedAt = Instant.ofEpochMilli(s.scannedAt).toString(),
+                    kind = s.kind,
                 ),
             )
             val lines = dao.linesForSession(s.clientUid).map {

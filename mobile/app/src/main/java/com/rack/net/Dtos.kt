@@ -47,6 +47,7 @@ data class ScanSessionDto(
     @SerialName("fixture_id") val fixtureId: String,
     val week: String,
     @SerialName("scanned_at") val scannedAt: String, // ISO-8601
+    val kind: String = "audit", // "audit" (Inventario) | "restock" (Repo)
 )
 
 @Serializable

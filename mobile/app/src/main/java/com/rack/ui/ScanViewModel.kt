@@ -3,6 +3,7 @@ package com.rack.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.rack.AppMode
 import com.rack.data.FixtureEntity
 import com.rack.data.RackDatabase
 import com.rack.data.ScanLineEntity
@@ -61,8 +62,8 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
                 val fixture = db.dao().findFixtureByBarcode(code)
                 if (fixture == null) {
                     setMessage("Mueble no reconocido: $code")
-                } else {
-                    // ¿Ya hay un conteo de este mueble esta semana en este equipo?
+                } else if (AppMode.isAudit) {
+                    // Inventario: ¿ya hay un conteo de este mueble esta semana en este equipo?
                     val prior = db.dao().lastSessionFor(fixture.id, IsoWeek.of())
                     val priorLines = if (prior != null) db.dao().linesForSession(prior.clientUid) else emptyList()
                     if (priorLines.isNotEmpty()) {
@@ -75,6 +76,9 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
                     } else {
                         _state.value = _state.value.copy(fixture = fixture, message = "Mueble: ${fixture.name}")
                     }
+                } else {
+                    // Repo: siempre suma, nunca pregunta.
+                    _state.value = _state.value.copy(fixture = fixture, message = "Reponiendo: ${fixture.name}")
                 }
             } else {
                 addProduct(code)
@@ -140,6 +144,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
                 week = IsoWeek.of(),
                 scannedAt = now,
                 synced = false,
+                kind = AppMode.kind,
             )
             val lines = counts.map { (sku, qty) -> ScanLineEntity(uid, sku, qty) }
             db.dao().saveScan(sessionEntity, lines)

@@ -38,6 +38,7 @@ data class ScanSessionEntity(
     val week: String,
     val scannedAt: Long,        // epoch millis
     val synced: Boolean = false,
+    val kind: String = "audit", // "audit" (Inventario) | "restock" (Repo)
 )
 
 /** Línea (SKU + cantidad) dentro de una sesión local. */

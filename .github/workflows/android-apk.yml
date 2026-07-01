@@ -29,16 +29,23 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build debug APK
+      - name: Build debug APKs (Inventario + Repo)
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug \
             -PSUPABASE_URL="${{ vars.SUPABASE_URL || 'https://xeuezawuivushqrkzjqq.supabase.co' }}" \
             -PSUPABASE_ANON_KEY="${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_hluqQhuiQ4JMTNNAu8kctQ_0TbjPtzL' }}"
 
-      - name: Upload APK
+      - name: Upload APK - Inventario
         uses: actions/upload-artifact@v4
         with:
-          name: rack-one-debug-apk
-          path: mobile/app/build/outputs/apk/debug/app-debug.apk
+          name: rack-one-inventario-debug-apk
+          path: mobile/app/build/outputs/apk/inventario/debug/app-inventario-debug.apk
+          if-no-files-found: error
+
+      - name: Upload APK - Repo
+        uses: actions/upload-artifact@v4
+        with:
+          name: rack-one-repo-debug-apk
+          path: mobile/app/build/outputs/apk/repo/debug/app-repo-debug.apk
           if-no-files-found: error

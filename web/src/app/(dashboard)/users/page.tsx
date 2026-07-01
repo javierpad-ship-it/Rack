@@ -6,7 +6,7 @@ import type { Store, UserRole } from '@/lib/types';
 import { listUsers, createUser, updateUser, deleteUser, type UserRow } from './actions';
 import PasswordInput from '@/components/PasswordInput';
 
-const ROLES: UserRole[] = ['admin', 'analista', 'visual', 'encargado', 'operario'];
+const ROLES: UserRole[] = ['admin', 'analista', 'visual', 'encargado', 'operario', 'reponedor'];
 
 export default function UsersPage() {
   const supabase = createClient();
@@ -149,7 +149,7 @@ export default function UsersPage() {
         </tbody>
       </table>
       <p className="muted" style={{ fontSize: 12 }}>
-        Nota: la columna Tienda aplica a roles visual / encargado / operario.
+        Nota: la columna Tienda aplica a roles visual / encargado / operario / reponedor.
       </p>
     </div>
   );

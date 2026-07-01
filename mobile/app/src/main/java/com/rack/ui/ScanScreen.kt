@@ -1,5 +1,6 @@
 package com.rack.ui
 
+import com.rack.AppMode
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,10 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(
+            "Rack One · ${AppMode.label}",
+            style = MaterialTheme.typography.labelMedium,
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

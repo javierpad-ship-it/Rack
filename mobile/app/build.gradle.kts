@@ -22,9 +22,28 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${project.findProperty("SUPABASE_ANON_KEY") ?: ""}\"")
     }
 
+    // Dos apps desde el mismo código: "Inventario" (conteo completo, audit)
+    // y "Repo" (reposición incremental, restock). Ver com.rack.AppMode.
+    flavorDimensions += "app"
+    productFlavors {
+        create("inventario") {
+            dimension = "app"
+            applicationId = "com.geeksapp.rackone"
+            resValue("string", "app_name", "Rack One - Inventario")
+            buildConfigField("String", "APP_KIND", "\"audit\"")
+        }
+        create("repo") {
+            dimension = "app"
+            applicationId = "com.geeksapp.rackone.repo"
+            resValue("string", "app_name", "Rack One - Repo")
+            buildConfigField("String", "APP_KIND", "\"restock\"")
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

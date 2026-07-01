@@ -6,7 +6,7 @@ import NavLinks from './NavLinks';
 import BrandLogo from '@/components/BrandLogo';
 
 const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
-  { href: '/', label: 'Resumen', roles: ['admin', 'analista', 'visual', 'encargado', 'operario'] },
+  { href: '/', label: 'Resumen', roles: ['admin', 'analista', 'visual', 'encargado', 'operario', 'reponedor'] },
   { href: '/stores', label: 'Tiendas', roles: ['admin'] },
   { href: '/fixtures', label: 'Muebles', roles: ['admin', 'visual', 'encargado'] },
   { href: '/labels', label: 'Etiquetas', roles: ['admin', 'visual', 'encargado'] },

@@ -35,7 +35,7 @@ jobs:
       - name: Decode upload keystore
         run: echo "${{ secrets.RACK_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > rack-one-upload.keystore
 
-      - name: Build signed release AAB
+      - name: Build signed release AABs (Inventario + Repo)
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon bundleRelease \
@@ -50,9 +50,16 @@ jobs:
         if: always()
         run: rm -f rack-one-upload.keystore
 
-      - name: Upload AAB
+      - name: Upload AAB - Inventario
         uses: actions/upload-artifact@v4
         with:
-          name: rack-one-release-aab
-          path: mobile/app/build/outputs/bundle/release/app-release.aab
+          name: rack-one-inventario-release-aab
+          path: mobile/app/build/outputs/bundle/inventarioRelease/app-inventario-release.aab
+          if-no-files-found: error
+
+      - name: Upload AAB - Repo
+        uses: actions/upload-artifact@v4
+        with:
+          name: rack-one-repo-release-aab
+          path: mobile/app/build/outputs/bundle/repoRelease/app-repo-release.aab
           if-no-files-found: error
