@@ -10,12 +10,13 @@ class IsoWeekTest {
     }
 
     @Test fun yearBoundaryBelongsToNextYear() {
-        // 2025-12-29 (lunes) -> semana 1 ISO de 2026
+        // Semana comercial (dom-sáb): la Semana 1 de 2026 arranca el 2025-12-28 (dom).
+        assertEquals("2026-W01", IsoWeek.of(LocalDate.of(2025, 12, 28)))
         assertEquals("2026-W01", IsoWeek.of(LocalDate.of(2025, 12, 29)))
     }
 
-    @Test fun janFirstCanBelongToPrevYear() {
-        // 2027-01-01 (viernes) -> semana 53 ISO de 2026
-        assertEquals("2026-W53", IsoWeek.of(LocalDate.of(2027, 1, 1)))
+    @Test fun janFirstBelongsToNewCommercialYear() {
+        // Semana comercial: la semana que contiene el 1/1/2027 es la Semana 1 de 2027.
+        assertEquals("2027-W01", IsoWeek.of(LocalDate.of(2027, 1, 1)))
     }
 }
