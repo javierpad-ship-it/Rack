@@ -12,9 +12,9 @@ describe('isoWeek', () => {
     expect(isoWeek(new Date(Date.UTC(2025, 11, 29)))).toBe('2026-W01');
   });
 
-  it('1 de enero puede pertenecer a la última semana del año previo', () => {
-    // 2027-01-01 (viernes) -> semana 53 de 2026 (ISO)
-    expect(isoWeek(new Date(Date.UTC(2027, 0, 1)))).toBe('2026-W53');
+  it('1 de enero pertenece a la Semana 1 comercial de ese año', () => {
+    // Semana comercial (dom–sáb): la semana que contiene el 1/1/2027 es 2027-W01.
+    expect(isoWeek(new Date(Date.UTC(2027, 0, 1)))).toBe('2027-W01');
   });
 });
 
