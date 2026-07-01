@@ -1,32 +1,62 @@
-// Cálculo de semana ISO en formato 'IYYY-"W"IW' (ej. 2026-W26).
-// DEBE coincidir con la función iso_week() de supabase/migrations/0002_attribution.sql.
+// Semana COMERCIAL (domingo→sábado), formato 'YYYY-Www' (ej. 2026-W01).
+// DEBE coincidir con comm_week() de supabase/migrations/0014_commercial_week.sql.
+// La Semana 1 de cada año arranca el domingo de la semana que contiene el 1/1
+// (semilla por defecto; el administrador puede anclarla a mano por año en la
+// pantalla Calendario, y el servidor recalcula con esa config).
 
-export function isoWeek(date: Date = new Date()): string {
-  // Copia en UTC para evitar desfases por zona horaria.
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  // ISO: el jueves de la semana define el año.
-  const dayNum = (d.getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
-  d.setUTCDate(d.getUTCDate() - dayNum + 3);
-  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
-  const week =
-    1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000));
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+function utc(y: number, m: number, d: number): Date {
+  return new Date(Date.UTC(y, m, d));
 }
 
-// Mes calendario en formato 'YYYY-MM' (para la proyección mensual).
+// Domingo (dow=0) en que empieza la semana 1 del año comercial `year` (regla por defecto).
+function week1Start(year: number): Date {
+  const jan1 = utc(year, 0, 1);
+  const dow = jan1.getUTCDay(); // 0=domingo ... 6=sábado
+  jan1.setUTCDate(jan1.getUTCDate() - dow);
+  return jan1;
+}
+
+const DAY = 24 * 3600 * 1000;
+
+// Etiqueta de semana comercial de una fecha.
+export function isoWeek(date: Date = new Date()): string {
+  const d = utc(date.getFullYear(), date.getMonth(), date.getDate());
+  const y = d.getUTCFullYear();
+  // Elegir el año cuyo inicio de Semana 1 es el mayor <= d (cubre el borde de fin de año).
+  let year = y;
+  let start = week1Start(y);
+  for (const cand of [y + 1, y - 1]) {
+    const cs = week1Start(cand);
+    if (cs.getTime() <= d.getTime() && cs.getTime() > start.getTime()) {
+      start = cs;
+      year = cand;
+    }
+  }
+  if (week1Start(y).getTime() > d.getTime()) {
+    // d cae antes del inicio de su propio año => pertenece al año anterior.
+    year = y - 1;
+    start = week1Start(y - 1);
+  }
+  const no = Math.floor((d.getTime() - start.getTime()) / (7 * DAY)) + 1;
+  return `${year}-W${String(no).padStart(2, '0')}`;
+}
+
+// Alias explícito por claridad.
+export const commWeek = isoWeek;
+
+// Mes calendario 'YYYY-MM' (para la proyección mensual).
 export function currentMonth(date: Date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Semana previa a una semana ISO dada (para comparativas semana a semana).
+// Semana previa a una etiqueta 'YYYY-Www' (para comparativas semana a semana).
 export function previousIsoWeek(week: string): string {
   const m = week.match(/^(\d{4})-W(\d{2})$/);
   if (!m) return week;
   const year = Number(m[1]);
   const wk = Number(m[2]);
   if (wk > 1) return `${year}-W${String(wk - 1).padStart(2, '0')}`;
-  // Semana 1 -> última semana del año anterior (52 o 53). Aproximamos con dic 28.
-  return isoWeek(new Date(Date.UTC(year - 1, 11, 28)));
+  // Semana 1 -> última semana del año anterior: la semana del sábado previo al inicio.
+  const prevSat = new Date(week1Start(year).getTime() - DAY);
+  return isoWeek(prevSat);
 }

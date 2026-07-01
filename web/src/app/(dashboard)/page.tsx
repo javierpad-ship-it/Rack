@@ -5,7 +5,17 @@ import type { Store } from '@/lib/types';
 
 export default async function DashboardHome() {
   const supabase = createClient();
-  const week = isoWeek();
+  // Semana vigente autoritativa (calendario comercial del servidor).
+  const { data: currentWeek } = await supabase.rpc('current_comm_week');
+  const week = (currentWeek as string) ?? isoWeek();
+  // Última semana efectivamente escaneada.
+  const { data: lastScan } = await supabase
+    .from('scan_sessions')
+    .select('week')
+    .order('week', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastScannedWeek = (lastScan?.week as string | undefined) ?? '—';
 
   const { count: storeCount } = await supabase
     .from('stores')
@@ -49,7 +59,7 @@ export default async function DashboardHome() {
 
   return (
     <div>
-      <span className="eyebrow">Semana {week}</span>
+      <span className="eyebrow">Semana vigente {week} · Última escaneada {lastScannedWeek}</span>
       <h1>Resumen</h1>
       <div className="row">
         {cards.map((c) => (

@@ -12,6 +12,7 @@ const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
   { href: '/labels', label: 'Etiquetas', roles: ['admin', 'visual', 'encargado'] },
   { href: '/layout', label: 'Plano', roles: ['admin', 'visual'] },
   { href: '/import', label: 'Importar', roles: ['admin'] },
+  { href: '/calendar', label: 'Calendario', roles: ['admin'] },
   { href: '/coverage', label: 'Cobertura', roles: ['admin', 'analista', 'encargado', 'visual'] },
   { href: '/alerts', label: 'Alertas', roles: ['admin', 'analista', 'encargado'] },
   { href: '/reports', label: 'Reportes', roles: ['admin', 'analista', 'encargado'] },
