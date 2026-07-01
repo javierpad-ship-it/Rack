@@ -10,7 +10,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.rack"
+        applicationId = "pe.lukers.rackone"
         minSdk = 24          // cubre equipos Honeywell con Android 7+
         targetSdk = 34
         versionCode = 1
@@ -36,9 +36,26 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    // Firma de release: lee ruta/contraseñas desde propiedades de Gradle
+    // (pasadas por CI vía -P o local.properties; nunca hardcodeadas).
+    val storeFilePath = project.findProperty("RACK_UPLOAD_STORE_FILE") as String?
+    signingConfigs {
+        if (!storeFilePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(storeFilePath)
+                storePassword = project.findProperty("RACK_UPLOAD_STORE_PASSWORD") as String?
+                keyAlias = project.findProperty("RACK_UPLOAD_KEY_ALIAS") as String?
+                keyPassword = project.findProperty("RACK_UPLOAD_KEY_PASSWORD") as String?
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (!storeFilePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }
