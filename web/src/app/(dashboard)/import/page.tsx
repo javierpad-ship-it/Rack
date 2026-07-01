@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
-import { parseCatalog, parseSales, parseStock, parseSalesDaily } from '@/lib/import/parseExcel';
-import { importCatalog, importSales, importStock, importSalesDaily } from './actions';
+import { parseCatalog, parseSales, parseStock, parseSalesDaily, parseStockSnapshot } from '@/lib/import/parseExcel';
+import { importCatalog, importSales, importStock, importSalesDaily, importStockSnapshot } from './actions';
 import type { Store } from '@/lib/types';
 
-type Kind = 'catalog' | 'sales_daily' | 'sales' | 'stock';
+type Kind = 'catalog' | 'sales_daily' | 'sales' | 'stock_snapshot' | 'stock';
 
 export default function ImportPage() {
   const supabase = createClient();
@@ -51,6 +51,11 @@ export default function ImportPage() {
         const { rows, errors } = parseSales(buf);
         const r = await importSales(storeId, week, rows);
         setStatus(`Ventas: ${r.ok} líneas importadas y atribuidas. ${errors.length} con error.`);
+      } else if (kind === 'stock_snapshot') {
+        if (!storeId) throw new Error('Elegí una tienda');
+        const { rows, errors } = parseStockSnapshot(buf);
+        const r = await importStockSnapshot(storeId, rows);
+        setStatus(`Stock vigente: ${r.ok} variantes (reemplazó la foto anterior). ${errors.length} con error.`);
       } else {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseStock(buf);
@@ -82,7 +87,8 @@ export default function ImportPage() {
             <option value="catalog">Catálogo de productos</option>
             <option value="sales_daily">Ventas (diario, con fecha)</option>
             <option value="sales">Ventas (por semana)</option>
-            <option value="stock">Stock total</option>
+            <option value="stock_snapshot">Stock (foto vigente)</option>
+            <option value="stock">Stock total (por semana)</option>
           </select>
         </label>
 
@@ -112,6 +118,13 @@ export default function ImportPage() {
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
             La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Reimportar el
             mismo día reemplaza esos datos. Se recalcula la semana afectada automáticamente.
+          </p>
+        )}
+        {kind === 'stock_snapshot' && (
+          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+            Es la <b>foto vigente</b> de stock: <b>reemplaza</b> todo el stock anterior de la tienda.
+            Cruza por <b>CODIGO_VARIANTE</b> (Stk Fin Act / Stk Val Act / Costo Prom). Actualiza el
+            almacén deducido de la semana vigente.
           </p>
         )}
 

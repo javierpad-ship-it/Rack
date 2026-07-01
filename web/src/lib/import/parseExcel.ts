@@ -170,6 +170,51 @@ export function parseSalesDaily(file: ArrayBuffer): ParseResult<SalesDailyRow> {
   return { rows, errors };
 }
 
+export interface StockSnapshotRow {
+  sku: string;
+  units: number;
+  value: number;
+  cost: number;
+  article_code: string | null;
+  description: string | null;
+  group_name: string | null;
+  sap_line: string | null;
+  gender: string | null;
+  color: string | null;
+  talla: string | null;
+  brand: string | null;
+  arrival_year: string | null;
+}
+
+// Stock vigente del POS por variante (Stk Fin Act / Stk Val Act / Costo Prom).
+export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshotRow> {
+  const rows: StockSnapshotRow[] = [];
+  const errors: ParseResult<StockSnapshotRow>['errors'] = [];
+  readSheet(file).forEach((r, i) => {
+    const sku = pick(r, ['codigo_variante', 'codigo variante', 'variante', 'sku', 'codigo']);
+    if (!sku) {
+      errors.push({ row: i + 2, message: 'Falta CODIGO_VARIANTE' });
+      return;
+    }
+    rows.push({
+      sku: String(sku).trim(),
+      units: Math.round(num(pick(r, ['stk fin act', 'stock', 'existencia', 'unidades', 'total']))),
+      value: num(pick(r, ['stk val act', 'valor', 'valorizado', 'stock valorizado'])),
+      cost: num(pick(r, ['costo prom', 'costo promedio', 'costo', 'cost'])),
+      article_code: (pick(r, ['codigo_articulo', 'codigo articulo', 'articulo']) as string | null) ?? null,
+      description: (pick(r, ['descripcion_articulo', 'descripcion articulo', 'descripcion', 'detalle']) as string | null) ?? null,
+      group_name: (pick(r, ['grupo_producto', 'grupo producto', 'grupo']) as string | null) ?? null,
+      sap_line: (pick(r, ['linea sap', 'linea_sap', 'linea']) as string | null) ?? null,
+      gender: (pick(r, ['genero lukers', 'genero', 'sexo']) as string | null) ?? null,
+      color: (pick(r, ['color']) as string | null) ?? null,
+      talla: (pick(r, ['talla', 'talle', 'size']) as string | null) ?? null,
+      brand: (pick(r, ['marca', 'brand']) as string | null) ?? null,
+      arrival_year: (pick(r, ['anio_llegada_lk', 'anio llegada', 'ano llegada', 'anio', 'ano']) as string | null)?.toString() ?? null,
+    });
+  });
+  return { rows, errors };
+}
+
 export interface StockRow {
   sku: string;
   total_units: number;

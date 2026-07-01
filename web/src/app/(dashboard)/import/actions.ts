@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { CatalogRow, SalesRow, StockRow, SalesDailyRow } from '@/lib/import/parseExcel';
+import type { CatalogRow, SalesRow, StockRow, SalesDailyRow, StockSnapshotRow } from '@/lib/import/parseExcel';
 
 // Verifica que el usuario actual sea admin antes de operaciones masivas.
 async function assertAdmin() {
@@ -143,6 +143,32 @@ export async function importSalesDaily(storeId: string, rawRows: SalesDailyRow[]
   if (error) throw new Error(`recompute: ${error.message}`);
 
   await logImport({ kind: 'sales_daily', storeId, week: null, rowsOk: rows.length, rowsError: 0, createdBy: uid });
+  return { ok: rows.length };
+}
+
+export async function importStockSnapshot(storeId: string, rawRows: StockSnapshotRow[]) {
+  const uid = await assertAdmin();
+  const admin = createAdminClient();
+
+  // Dedup por variante (último gana) para respetar la PK (store_id, sku).
+  const map = new Map<string, StockSnapshotRow>();
+  for (const r of rawRows) map.set(r.sku, r);
+  const rows = [...map.values()];
+
+  // Reemplazar la foto: borrar el stock vigente de la tienda e insertar el nuevo.
+  const { error: delErr } = await admin.from('stock_current').delete().eq('store_id', storeId);
+  if (delErr) throw new Error(`stock_current: ${delErr.message}`);
+  await upsertChunked(
+    'stock_current',
+    rows.map((r) => ({ store_id: storeId, updated_at: new Date().toISOString(), ...r })),
+    'store_id,sku',
+  );
+
+  // Refrescar el almacén deducido de la semana vigente con las nuevas unidades.
+  const { error } = await admin.rpc('apply_stock_snapshot', { p_store_id: storeId });
+  if (error) throw new Error(`apply_stock_snapshot: ${error.message}`);
+
+  await logImport({ kind: 'stock_snapshot', storeId, week: null, rowsOk: rows.length, rowsError: 0, createdBy: uid });
   return { ok: rows.length };
 }
 
