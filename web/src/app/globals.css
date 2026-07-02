@@ -278,7 +278,33 @@ tbody tr:last-child td { border-bottom: none; }
   color: #7E93C6;
 }
 
-.side nav { display: flex; flex-direction: column; gap: 2px; }
+.side nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-flat { display: flex; flex-direction: column; gap: 2px; }
+
+/* Grupo colapsable (ej. Mantenimiento) */
+.nav-group { margin-top: 6px; }
+.nav-group-header {
+  width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 5px;
+  color: #7E93C6;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+.nav-group-header:hover { background: transparent; filter: none; color: #fff; }
+.nav-group-header:active { transform: none; }
+.nav-group-header .chev { font-size: 0.65rem; transition: transform 0.15s ease; }
+.nav-group-header .chev.open { transform: rotate(180deg); }
+.nav-group-items { display: flex; flex-direction: column; gap: 2px; }
+.nav-group-items a { padding-left: 22px; }
 .side nav a {
   color: #BCC9E6;
   border: none;

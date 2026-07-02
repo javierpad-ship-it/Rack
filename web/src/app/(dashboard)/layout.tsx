@@ -5,21 +5,41 @@ import SignOutButton from './SignOutButton';
 import NavLinks from './NavLinks';
 import BrandLogo from '@/components/BrandLogo';
 
-const NAV: { href: string; label: string; roles: Profile['role'][] }[] = [
-  { href: '/', label: 'Resumen', roles: ['admin', 'analista', 'visual', 'encargado', 'operario', 'reponedor'] },
-  { href: '/stores', label: 'Tiendas', roles: ['admin'] },
-  { href: '/fixtures', label: 'Muebles', roles: ['admin', 'visual', 'encargado'] },
-  { href: '/labels', label: 'Etiquetas', roles: ['admin', 'visual', 'encargado'] },
-  { href: '/layout', label: 'Plano', roles: ['admin', 'visual'] },
-  { href: '/import', label: 'Importar', roles: ['admin'] },
-  { href: '/store-aliases', label: 'Mapeo de tiendas', roles: ['admin'] },
-  { href: '/calendar', label: 'Calendario', roles: ['admin'] },
-  { href: '/coverage', label: 'Cobertura', roles: ['admin', 'analista', 'encargado', 'visual'] },
-  { href: '/alerts', label: 'Alertas', roles: ['admin', 'analista', 'encargado'] },
-  { href: '/reports', label: 'Reportes', roles: ['admin', 'analista', 'encargado'] },
-  { href: '/trends', label: 'Tendencias', roles: ['admin', 'analista', 'encargado'] },
-  { href: '/monthly', label: 'Mensual', roles: ['admin', 'analista', 'encargado'] },
-  { href: '/users', label: 'Usuarios', roles: ['admin'] },
+type NavItem = { href: string; label: string; roles: Profile['role'][] };
+type NavSection = { label?: string; items: NavItem[] };
+
+const ALL: Profile['role'][] = ['admin', 'analista', 'visual', 'encargado', 'operario', 'reponedor'];
+const ANALYTICS: Profile['role'][] = ['admin', 'analista', 'encargado'];
+
+const NAV_SECTIONS: NavSection[] = [
+  // Análisis / operación (nivel superior)
+  {
+    items: [
+      { href: '/', label: 'Resumen', roles: ALL },
+      { href: '/coverage', label: 'Cobertura', roles: ['admin', 'analista', 'encargado', 'visual'] },
+      { href: '/reports', label: 'Reportes', roles: ANALYTICS },
+      { href: '/alerts', label: 'Alertas', roles: ANALYTICS },
+      { href: '/trends', label: 'Tendencias', roles: ANALYTICS },
+      { href: '/monthly', label: 'Mensual', roles: ANALYTICS },
+    ],
+  },
+  // Carga de datos
+  {
+    items: [{ href: '/import', label: 'Importar', roles: ['admin'] }],
+  },
+  // Mantenimiento (grupo colapsable)
+  {
+    label: 'Mantenimiento',
+    items: [
+      { href: '/stores', label: 'Tiendas', roles: ['admin'] },
+      { href: '/fixtures', label: 'Muebles', roles: ['admin', 'visual', 'encargado'] },
+      { href: '/layout', label: 'Planos', roles: ['admin', 'visual'] },
+      { href: '/labels', label: 'Etiquetas', roles: ['admin', 'visual', 'encargado'] },
+      { href: '/calendar', label: 'Calendario', roles: ['admin'] },
+      { href: '/store-aliases', label: 'Mapeo de tiendas', roles: ['admin'] },
+      { href: '/users', label: 'Usuarios', roles: ['admin'] },
+    ],
+  },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +56,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .single<Profile>();
 
   const role = profile?.role ?? 'operario';
-  const items = NAV.filter((n) => n.roles.includes(role));
+  // Filtra items por rol y descarta secciones que quedan vacías.
+  const sections = NAV_SECTIONS.map((s) => ({
+    label: s.label,
+    items: s.items.filter((n) => n.roles.includes(role)).map(({ href, label }) => ({ href, label })),
+  })).filter((s) => s.items.length > 0);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '232px 1fr', minHeight: '100vh' }}>
@@ -45,7 +69,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <BrandLogo variant="sidebar" />
           <span className="brand-by">Lukers</span>
         </div>
-        <NavLinks items={items.map(({ href, label }) => ({ href, label }))} />
+        <NavLinks sections={sections} />
         <div className="who">
           <div className="name">{profile?.full_name ?? user.email}</div>
           <span className="role-badge">{role}</span>
