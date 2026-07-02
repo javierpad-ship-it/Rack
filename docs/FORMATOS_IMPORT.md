@@ -13,12 +13,19 @@
 | categoria | rubro, category | No |
 
 ## Ventas — diario (recomendado; carga incremental día a día, histórico 24 meses)
-Se elige la **tienda** en la UI; la **fecha** sale del archivo. El **SKU es `CODIGO_VARIANTE`**
-(el mismo que se cruza con el escaneo de piso y con el stock). Reimportar el mismo
-día/variante **reemplaza** esa línea; el resto del histórico no se toca.
+Un solo archivo puede traer **todas las tiendas juntas** (columna `TIENDA`): cada fila se reparte
+sola según el **Mapeo de tiendas** (`/store-aliases`, admin) — asocia el nombre tal como viene del
+POS/QlikView con la tienda de Rack One. Si una tienda no está mapeada, esas filas no se cargan y la
+UI avisa cuáles faltan. Si el archivo no trae `TIENDA`, se usa la tienda elegida en la UI (modo
+respaldo, un archivo = una tienda).
+
+La **fecha** sale del archivo. El **SKU es `CODIGO_VARIANTE`** (el mismo que se cruza con el escaneo
+de piso y con el stock). Reimportar el mismo día/variante/tienda **reemplaza** esa línea (con aviso
+previo); el resto del histórico no se toca.
 
 | Columna | Alternativas aceptadas | Obligatorio |
 |---|---|---|
+| TIENDA | tienda, store, nombre tienda | No* (*si falta, usa la tienda de la UI) |
 | CODIGO_VARIANTE | codigo_variante, variante, sku, codigo | **Sí** (es el SKU) |
 | MES_AÑO + DIA | *(o una sola columna `fecha`)* | **Sí** — ej. `Jun 2026` + `14` → `2026-06-14` |
 | CODIGO_ARTICULO | codigo_articulo, articulo | No |
@@ -43,10 +50,13 @@ día/variante **reemplaza** esa línea; el resto del histórico no se toca.
 
 ## Stock — foto vigente (recomendado; cada carga REEMPLAZA el stock anterior de la tienda)
 SKU = `CODIGO_VARIANTE`. No lleva fecha: es la **foto de stock actual**, tal como la ves en
-tu reporte de stock (Stk Fin Act / Stk Val Act / Costo Prom).
+tu reporte de stock (Stk Fin Act / Stk Val Act / Costo Prom). Igual que en Ventas diario, un solo
+archivo puede traer **todas las tiendas juntas** (columna `TIENDA`) y se reparte por el Mapeo de
+tiendas; cada tienda reemplaza solo su propio stock, no el de las demás.
 
 | Columna | Alternativas aceptadas | Obligatorio |
 |---|---|---|
+| TIENDA | tienda, store, nombre tienda | No* (*si falta, usa la tienda de la UI) |
 | CODIGO_VARIANTE | codigo_variante, variante, sku, codigo | **Sí** (es el SKU) |
 | Stk Fin Act | stock, existencia, unidades, total | No (default 0) — unidades |
 | Stk Val Act | valor, valorizado, stock valorizado | No (default 0) — valor $ |

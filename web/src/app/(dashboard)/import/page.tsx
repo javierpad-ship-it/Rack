@@ -1,21 +1,61 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
-import { parseSales, parseStock, parseSalesDaily, parseStockSnapshot } from '@/lib/import/parseExcel';
 import {
-  importSales,
-  importStock,
-  importSalesDaily,
-  importStockSnapshot,
-  existingSalesDates,
-} from './actions';
+  parseSales,
+  parseStock,
+  parseSalesDaily,
+  parseStockSnapshot,
+  type SalesDailyRow,
+  type StockSnapshotRow,
+} from '@/lib/import/parseExcel';
+import { importSales, importStock, importSalesDaily, importStockSnapshot, existingSalesDates } from './actions';
+import { resolveStoreLabels } from '../store-aliases/actions';
 import type { Store } from '@/lib/types';
 
 // El catálogo de productos ya no se carga aparte: se deriva de "Stock (foto
 // vigente)" (sku, nombre, familia/categoría). Ver importStockSnapshot.
 type Kind = 'sales_daily' | 'sales' | 'stock_snapshot' | 'stock';
+
+// Reparte filas por tienda usando la columna TIENDA del archivo (mapeada en
+// /store-aliases). Si una fila no trae TIENDA, cae en `fallbackStoreId`
+// (selector de la pantalla). Devuelve las filas resueltas + las que quedaron
+// sin poder repartirse (tienda del archivo sin mapeo todavía).
+async function resolveRows<T extends { store_label: string | null }>(
+  rows: T[],
+  fallbackStoreId: string,
+): Promise<{ resolved: (T & { storeId: string })[]; unmapped: { label: string; count: number }[] }> {
+  const labels = [...new Set(rows.map((r) => r.store_label).filter((l): l is string => !!l))];
+  const map = labels.length > 0 ? await resolveStoreLabels(labels) : { ok: true as const, data: {} };
+  if (!map.ok) throw new Error(map.error);
+
+  const unmappedCounts = new Map<string, number>();
+  const resolved: (T & { storeId: string })[] = [];
+  for (const r of rows) {
+    if (!r.store_label) {
+      if (!fallbackStoreId) continue; // se cuenta como error por fuera
+      resolved.push({ ...r, storeId: fallbackStoreId });
+      continue;
+    }
+    const sid = map.data[r.store_label];
+    if (sid) {
+      resolved.push({ ...r, storeId: sid });
+    } else {
+      unmappedCounts.set(r.store_label, (unmappedCounts.get(r.store_label) ?? 0) + 1);
+    }
+  }
+  const unmapped = [...unmappedCounts.entries()].map(([label, count]) => ({ label, count }));
+  return { resolved, unmapped };
+}
+
+function unmappedMsg(unmapped: { label: string; count: number }[]): string {
+  if (unmapped.length === 0) return '';
+  const list = unmapped.map((u) => `${u.label} (${u.count})`).join(', ');
+  return ` ⚠️ Sin mapear (no se cargaron): ${list}. Agregalas en Mapeo de tiendas.`;
+}
 
 export default function ImportPage() {
   const supabase = createClient();
@@ -46,26 +86,32 @@ export default function ImportPage() {
     try {
       const buf = await file.arrayBuffer();
       if (kind === 'sales_daily') {
-        if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseSalesDaily(buf);
-        const dates = [...new Set(rows.map((r) => r.sale_date))];
-        const dup = await existingSalesDates(storeId, dates);
+        const { resolved, unmapped } = await resolveRows<SalesDailyRow>(rows, storeId);
+        if (resolved.length === 0) {
+          setStatus(`Nada para importar.${unmappedMsg(unmapped)}`);
+          return;
+        }
+        const pairs = [...new Set(resolved.map((r) => `${r.storeId}|${r.sale_date}`))].map((k) => {
+          const [sId, date] = k.split('|');
+          return { storeId: sId, date };
+        });
+        const dup = await existingSalesDates(pairs);
         if (dup.length > 0) {
-          const list = dup.join(', ');
-          const proceed = window.confirm(
-            `Ya hay datos cargados para: ${list}.\n\n¿Reemplazar esos días con este archivo?`,
-          );
+          const list = dup
+            .map((d) => `${stores.find((s) => s.id === d.storeId)?.name ?? d.storeId}: ${d.date}`)
+            .join('\n');
+          const proceed = window.confirm(`Ya hay datos cargados para:\n${list}\n\n¿Reemplazarlos?`);
           if (!proceed) {
             setStatus('Cancelado: no se modificó nada.');
-            setBusy(false);
-            e.target.value = '';
             return;
           }
         }
-        const r = await importSalesDaily(storeId, rows);
+        const r = await importSalesDaily(resolved);
         setStatus(
-          `Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error.` +
-            (dup.length > 0 ? ` (se reemplazaron ${dup.length} día(s) ya cargado(s))` : ''),
+          `Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error de formato.` +
+            (dup.length > 0 ? ` Se reemplazaron ${dup.length} combinación(es) tienda/día.` : '') +
+            unmappedMsg(unmapped),
         );
       } else if (kind === 'sales') {
         if (!storeId) throw new Error('Elegí una tienda');
@@ -73,10 +119,17 @@ export default function ImportPage() {
         const r = await importSales(storeId, week, rows);
         setStatus(`Ventas: ${r.ok} líneas importadas y atribuidas. ${errors.length} con error.`);
       } else if (kind === 'stock_snapshot') {
-        if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseStockSnapshot(buf);
-        const r = await importStockSnapshot(storeId, rows);
-        setStatus(`Stock vigente: ${r.ok} variantes (reemplazó la foto anterior). ${errors.length} con error.`);
+        const { resolved, unmapped } = await resolveRows<StockSnapshotRow>(rows, storeId);
+        if (resolved.length === 0) {
+          setStatus(`Nada para importar.${unmappedMsg(unmapped)}`);
+          return;
+        }
+        const r = await importStockSnapshot(resolved);
+        setStatus(
+          `Stock vigente: ${r.ok} variantes (reemplazó la foto anterior de cada tienda). ` +
+            `${errors.length} con error de formato.${unmappedMsg(unmapped)}`,
+        );
       } else {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseStock(buf);
@@ -92,6 +145,7 @@ export default function ImportPage() {
   }
 
   const needsWeek = kind === 'sales' || kind === 'stock';
+  const multiStore = kind === 'sales_daily' || kind === 'stock_snapshot';
 
   return (
     <div>
@@ -99,7 +153,7 @@ export default function ImportPage() {
       <p className="muted">
         Subí un Excel/CSV. Formatos aceptados en <code>docs/FORMATOS_IMPORT.md</code>.
       </p>
-      <div className="panel" style={{ maxWidth: 560, display: 'grid', gap: 12 }}>
+      <div className="panel" style={{ maxWidth: 620, display: 'grid', gap: 12 }}>
         <label>
           Tipo de dato
           <br />
@@ -113,7 +167,7 @@ export default function ImportPage() {
 
         <div className="row">
           <label>
-            Tienda
+            Tienda {multiStore && <span className="muted">(respaldo, si la fila no trae TIENDA)</span>}
             <br />
             <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
               {stores.map((s) => (
@@ -131,19 +185,25 @@ export default function ImportPage() {
             </label>
           )}
         </div>
+        {multiStore && (
+          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+            Un solo archivo puede traer <b>todas las tiendas juntas</b> (columna TIENDA): cada fila se
+            reparte sola según el{' '}
+            <Link href="/store-aliases">Mapeo de tiendas</Link>. Si una tienda no está mapeada, esas
+            filas no se cargan y te avisamos cuáles son.
+          </p>
+        )}
         {kind === 'sales_daily' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
             La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Si el día ya
-            estaba cargado, te avisa antes de reemplazarlo. Se recalcula la semana afectada
-            automáticamente.
+            estaba cargado para esa tienda, te avisa antes de reemplazarlo.
           </p>
         )}
         {kind === 'stock_snapshot' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            Es la <b>foto vigente</b> de stock: <b>reemplaza</b> todo el stock anterior de la tienda.
+            Es la <b>foto vigente</b> de stock: <b>reemplaza</b> todo el stock anterior de cada tienda.
             Cruza por <b>CODIGO_VARIANTE</b> (Stk Fin Act / Stk Val Act / Costo Prom). Actualiza el
-            almacén deducido de la semana vigente y el <b>catálogo de productos</b> (nombre, familia,
-            categoría) — no hace falta cargar un catálogo aparte.
+            almacén deducido de la semana vigente y el <b>catálogo de productos</b>.
           </p>
         )}
 

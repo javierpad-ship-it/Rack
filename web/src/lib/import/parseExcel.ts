@@ -126,6 +126,7 @@ function num(v: unknown): number {
 export interface SalesDailyRow {
   sale_date: string;
   sku: string;
+  store_label: string | null; // columna TIENDA del archivo (reparto multi-tienda)
   article_code: string | null;
   description: string | null;
   group_name: string | null;
@@ -157,6 +158,7 @@ export function parseSalesDaily(file: ArrayBuffer): ParseResult<SalesDailyRow> {
     rows.push({
       sale_date,
       sku: String(sku).trim(),
+      store_label: (pick(r, ['tienda', 'store', 'nombre tienda']) as string | null) ?? null,
       article_code: (pick(r, ['codigo_articulo', 'codigo articulo', 'articulo']) as string | null) ?? null,
       description: (pick(r, ['descripcion_articulo', 'descripcion articulo', 'descripcion', 'detalle']) as string | null) ?? null,
       group_name: (pick(r, ['grupo_producto', 'grupo producto', 'grupo']) as string | null) ?? null,
@@ -172,6 +174,7 @@ export function parseSalesDaily(file: ArrayBuffer): ParseResult<SalesDailyRow> {
 
 export interface StockSnapshotRow {
   sku: string;
+  store_label: string | null; // columna TIENDA del archivo (reparto multi-tienda)
   units: number;
   value: number;
   cost: number;
@@ -198,6 +201,7 @@ export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshot
     }
     rows.push({
       sku: String(sku).trim(),
+      store_label: (pick(r, ['tienda', 'store', 'nombre tienda']) as string | null) ?? null,
       units: Math.round(num(pick(r, ['stk fin act', 'stock', 'existencia', 'unidades', 'total']))),
       value: num(pick(r, ['stk val act', 'valor', 'valorizado', 'stock valorizado'])),
       cost: num(pick(r, ['costo prom', 'costo promedio', 'costo', 'cost'])),
