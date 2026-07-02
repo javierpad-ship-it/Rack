@@ -184,6 +184,29 @@ export async function importStockSnapshot(storeId: string, rawRows: StockSnapsho
   const { error } = await admin.rpc('apply_stock_snapshot', { p_store_id: storeId });
   if (error) throw new Error(`apply_stock_snapshot: ${error.message}`);
 
+  // Derivar/actualizar el catálogo (products) desde el stock vigente: no hay
+  // carga manual de catálogo, el nombre/familia/categoría de cada SKU sale de
+  // la última foto de stock que lo mencione (en cualquier tienda).
+  const now = new Date().toISOString();
+  const products = rows.map((r) => {
+    const variant = [r.color, r.talla].filter(Boolean).join(' ');
+    const name = r.description
+      ? variant
+        ? `${r.description} (${variant})`
+        : r.description
+      : r.sku;
+    // No se manda `ean`: así no se pisa un valor ya cargado (el stock vigente
+    // no trae EAN). PostgREST solo actualiza las columnas presentes en el body.
+    return {
+      sku: r.sku,
+      name,
+      family: r.group_name,
+      category: r.sap_line,
+      updated_at: now,
+    };
+  });
+  await upsertChunked('products', products, 'sku');
+
   await logImport({ kind: 'stock_snapshot', storeId, week: null, rowsOk: rows.length, rowsError: 0, createdBy: uid });
   return { ok: rows.length };
 }

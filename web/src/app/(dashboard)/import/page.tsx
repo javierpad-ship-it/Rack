@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
-import { parseCatalog, parseSales, parseStock, parseSalesDaily, parseStockSnapshot } from '@/lib/import/parseExcel';
+import { parseSales, parseStock, parseSalesDaily, parseStockSnapshot } from '@/lib/import/parseExcel';
 import {
-  importCatalog,
   importSales,
   importStock,
   importSalesDaily,
@@ -14,11 +13,13 @@ import {
 } from './actions';
 import type { Store } from '@/lib/types';
 
-type Kind = 'catalog' | 'sales_daily' | 'sales' | 'stock_snapshot' | 'stock';
+// El catálogo de productos ya no se carga aparte: se deriva de "Stock (foto
+// vigente)" (sku, nombre, familia/categoría). Ver importStockSnapshot.
+type Kind = 'sales_daily' | 'sales' | 'stock_snapshot' | 'stock';
 
 export default function ImportPage() {
   const supabase = createClient();
-  const [kind, setKind] = useState<Kind>('catalog');
+  const [kind, setKind] = useState<Kind>('sales_daily');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const [week, setWeek] = useState(isoWeek());
@@ -44,11 +45,7 @@ export default function ImportPage() {
     setStatus('Procesando archivo…');
     try {
       const buf = await file.arrayBuffer();
-      if (kind === 'catalog') {
-        const { rows, errors } = parseCatalog(buf);
-        const r = await importCatalog(rows);
-        setStatus(`Catálogo: ${r.ok} productos. ${errors.length} filas con error.`);
-      } else if (kind === 'sales_daily') {
+      if (kind === 'sales_daily') {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseSalesDaily(buf);
         const dates = [...new Set(rows.map((r) => r.sale_date))];
@@ -94,7 +91,6 @@ export default function ImportPage() {
     }
   }
 
-  const needsStore = kind !== 'catalog';
   const needsWeek = kind === 'sales' || kind === 'stock';
 
   return (
@@ -108,7 +104,6 @@ export default function ImportPage() {
           Tipo de dato
           <br />
           <select value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
-            <option value="catalog">Catálogo de productos</option>
             <option value="sales_daily">Ventas (diario, con fecha)</option>
             <option value="sales">Ventas (por semana)</option>
             <option value="stock_snapshot">Stock (foto vigente)</option>
@@ -116,28 +111,26 @@ export default function ImportPage() {
           </select>
         </label>
 
-        {needsStore && (
-          <div className="row">
+        <div className="row">
+          <label>
+            Tienda
+            <br />
+            <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {needsWeek && (
             <label>
-              Tienda
+              Semana (ISO)
               <br />
-              <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <input value={week} onChange={(e) => setWeek(e.target.value)} />
             </label>
-            {needsWeek && (
-              <label>
-                Semana (ISO)
-                <br />
-                <input value={week} onChange={(e) => setWeek(e.target.value)} />
-              </label>
-            )}
-          </div>
-        )}
+          )}
+        </div>
         {kind === 'sales_daily' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
             La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Si el día ya
@@ -149,7 +142,8 @@ export default function ImportPage() {
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
             Es la <b>foto vigente</b> de stock: <b>reemplaza</b> todo el stock anterior de la tienda.
             Cruza por <b>CODIGO_VARIANTE</b> (Stk Fin Act / Stk Val Act / Costo Prom). Actualiza el
-            almacén deducido de la semana vigente.
+            almacén deducido de la semana vigente y el <b>catálogo de productos</b> (nombre, familia,
+            categoría) — no hace falta cargar un catálogo aparte.
           </p>
         )}
 
