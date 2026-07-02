@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Rack One - Repo: azul (reposición), marca original de Rack One. -->
+    <color name="brand_color">#102A43</color>
+    <color name="brand_accent">#2B5BE2</color>
+    <color name="ic_launcher_background">#102A43</color>
+</resources>

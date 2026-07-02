@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fallback plano (Android &lt; 8, sin ícono adaptativo). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#102A43" android:pathData="M0,0 h108 v108 h-108 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,42 L54,30 L76,42 L76,68 L54,80 L32,68 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,42 L54,54 L76,42 M54,54 L54,80"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M79,14 h8 v10 h10 v8 h-10 v10 h-8 v-10 h-10 v-8 h10 Z" />
+</vector>

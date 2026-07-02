@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -24,7 +23,7 @@ class MainActivity : ComponentActivity() {
         SyncScheduler.schedulePeriodic(this)
 
         setContent {
-            MaterialTheme {
+            RackTheme {
                 Surface {
                     var loggedIn by remember { mutableStateOf(session.isLoggedIn) }
 

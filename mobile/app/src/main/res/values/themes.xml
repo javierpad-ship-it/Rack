@@ -6,7 +6,8 @@
       para no depender de la librería Material (View).
     -->
     <style name="Theme.RackOne" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#102A43</item>
+        <!-- brand_color viene del flavor: verde (Inventario) / azul (Repo). -->
+        <item name="android:statusBarColor">@color/brand_color</item>
         <item name="android:windowBackground">#FFFFFFFF</item>
     </style>
 </resources>
