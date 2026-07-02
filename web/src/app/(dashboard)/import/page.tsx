@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
 import { parseCatalog, parseSales, parseStock, parseSalesDaily, parseStockSnapshot } from '@/lib/import/parseExcel';
-import { importCatalog, importSales, importStock, importSalesDaily, importStockSnapshot } from './actions';
+import {
+  importCatalog,
+  importSales,
+  importStock,
+  importSalesDaily,
+  importStockSnapshot,
+  existingSalesDates,
+} from './actions';
 import type { Store } from '@/lib/types';
 
 type Kind = 'catalog' | 'sales_daily' | 'sales' | 'stock_snapshot' | 'stock';
@@ -44,8 +51,25 @@ export default function ImportPage() {
       } else if (kind === 'sales_daily') {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseSalesDaily(buf);
+        const dates = [...new Set(rows.map((r) => r.sale_date))];
+        const dup = await existingSalesDates(storeId, dates);
+        if (dup.length > 0) {
+          const list = dup.join(', ');
+          const proceed = window.confirm(
+            `Ya hay datos cargados para: ${list}.\n\n¿Reemplazar esos días con este archivo?`,
+          );
+          if (!proceed) {
+            setStatus('Cancelado: no se modificó nada.');
+            setBusy(false);
+            e.target.value = '';
+            return;
+          }
+        }
         const r = await importSalesDaily(storeId, rows);
-        setStatus(`Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error.`);
+        setStatus(
+          `Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error.` +
+            (dup.length > 0 ? ` (se reemplazaron ${dup.length} día(s) ya cargado(s))` : ''),
+        );
       } else if (kind === 'sales') {
         if (!storeId) throw new Error('Elegí una tienda');
         const { rows, errors } = parseSales(buf);
@@ -116,8 +140,9 @@ export default function ImportPage() {
         )}
         {kind === 'sales_daily' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Reimportar el
-            mismo día reemplaza esos datos. Se recalcula la semana afectada automáticamente.
+            La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Si el día ya
+            estaba cargado, te avisa antes de reemplazarlo. Se recalcula la semana afectada
+            automáticamente.
           </p>
         )}
         {kind === 'stock_snapshot' && (

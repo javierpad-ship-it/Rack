@@ -100,6 +100,22 @@ export async function importSales(storeId: string, week: string, rawRows: SalesR
   return { ok: rows.length };
 }
 
+// Fechas del archivo que ya tienen datos cargados para esa tienda (para avisar
+// antes de reemplazar un día ya subido).
+export async function existingSalesDates(storeId: string, dates: string[]): Promise<string[]> {
+  await assertAdmin();
+  const uniq = [...new Set(dates)];
+  if (uniq.length === 0) return [];
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('sales_daily')
+    .select('sale_date')
+    .eq('store_id', storeId)
+    .in('sale_date', uniq);
+  if (error) throw new Error(error.message);
+  return [...new Set((data ?? []).map((d) => d.sale_date as string))].sort();
+}
+
 export async function importSalesDaily(storeId: string, rawRows: SalesDailyRow[]) {
   const uid = await assertAdmin();
   if (rawRows.length === 0) return { ok: 0 };
