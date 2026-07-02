@@ -1,7 +1,8 @@
-name: Android APK
+name: Android Tests
 
-# Compila el APK del módulo mobile/ (Honeywell ScanPal EDA52) y lo publica como
-# artefacto. Railway no compila ni hospeda apps Android: este es el camino de build.
+# Corre los tests unitarios (JVM) del módulo mobile/ para ambos flavors
+# (Inventario y Repo). El build de APK/AAB vive en android-apk.yml /
+# android-release.yml — este workflow no duplica esa parte.
 on:
   push:
     paths: ["mobile/**"]
@@ -10,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,30 +28,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # El wrapper no está versionado; lo generamos (gradle viene preinstalado en el runner).
-      - name: Generate Gradle wrapper
-        run: gradle wrapper --gradle-version 8.7
-
-      - name: Unit tests (JVM)
-        run: ./gradlew :app:testDebugUnitTest
-
-      - name: Build debug APK
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: ./gradlew assembleDebug -PSUPABASE_URL="$SUPABASE_URL" -PSUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: rack-debug-apk
-          path: mobile/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-  # --- Firma de release (opcional, futuro) ----------------------------------
-  # Para distribuir un APK firmado en vez del debug:
-  #   1. Generar un keystore y guardarlo como secret base64 (RELEASE_KEYSTORE_BASE64),
-  #      junto con RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS / RELEASE_KEY_PASSWORD.
-  #   2. Agregar un signingConfig 'release' en mobile/app/build.gradle.kts que lea esas props.
-  #   3. Decodificar el keystore en el runner y correr ./gradlew assembleRelease.
-  # Por ahora el APK debug alcanza para instalación interna en los EDA52 (MDM/adb).
+      - name: Unit tests (JVM) — Inventario + Repo
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon testInventarioDebugUnitTest testRepoDebugUnitTest
