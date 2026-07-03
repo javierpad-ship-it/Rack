@@ -36,13 +36,18 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.RACK_UPLOAD_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.RACK_UPLOAD_STORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.RACK_UPLOAD_KEY_ALIAS }}
         run: |
           printf '%s' "$KEYSTORE_B64" | base64 -d > rack-one-upload.keystore
           if ! keytool -list -keystore rack-one-upload.keystore -storepass "$KS_PASS" >/dev/null 2>&1; then
             echo "::error::Keystore inválido. Revisá el secret RACK_UPLOAD_KEYSTORE_BASE64 (pegá TODO el contenido del .txt, una sola línea) y RACK_UPLOAD_STORE_PASSWORD."
             exit 1
           fi
-          echo "Keystore OK ($(stat -c%s rack-one-upload.keystore) bytes)"
+          if ! keytool -list -keystore rack-one-upload.keystore -storepass "$KS_PASS" -alias "$KS_ALIAS" >/dev/null 2>&1; then
+            echo "::error::El alias no existe en el keystore. El secret RACK_UPLOAD_KEY_ALIAS debe ser exactamente 'rackone-upload' (no pegues ahí el base64)."
+            exit 1
+          fi
+          echo "Keystore + alias OK ($(stat -c%s rack-one-upload.keystore) bytes)"
 
       # Los valores se pasan como env ORG_GRADLE_PROJECT_*, que Gradle mapea a
       # propiedades de proyecto (findProperty). Así evitamos interpolarlos en la
