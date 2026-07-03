@@ -127,6 +127,85 @@ export async function existingSalesDates(
   });
 }
 
+// ---- Carga por lotes (para archivos grandes) --------------------------------
+// El navegador agrega/deduplica y llama estas acciones en tandas chicas, para
+// no exceder el límite de tamaño de los Server Actions. El recálculo va aparte,
+// una sola vez al final.
+
+type SalesDailyInsert = Omit<SalesDailyRow, 'store_label'> & { store_id: string };
+
+// Inserta un lote de ventas diarias (ya agregadas por store/sku/fecha). No recomputa.
+export async function appendSalesDaily(rows: SalesDailyInsert[]) {
+  await assertAdmin();
+  if (rows.length === 0) return { ok: 0 };
+  await upsertChunked('sales_daily', rows, 'store_id,sku,sale_date');
+  return { ok: rows.length };
+}
+
+// Recalcula semanas comerciales + atribución para cada (tienda, rango de fechas).
+export async function recomputeSalesDaily(
+  ranges: { storeId: string; from: string; to: string; rows: number }[],
+) {
+  const uid = await assertAdmin();
+  const admin = createAdminClient();
+  for (const r of ranges) {
+    const { error } = await admin.rpc('recompute_sales_range', {
+      p_store_id: r.storeId,
+      p_from: r.from,
+      p_to: r.to,
+    });
+    if (error) throw new Error(`recompute: ${error.message}`);
+    await logImport({ kind: 'sales_daily', storeId: r.storeId, week: null, rowsOk: r.rows, rowsError: 0, createdBy: uid });
+  }
+}
+
+type StockInsert = Omit<StockSnapshotRow, 'store_label'>;
+
+// Prepara la carga de una foto: borra esa (tienda, fecha) y el stock vigente.
+export async function beginStockSnapshot(storeId: string, snapshotDate: string) {
+  await assertAdmin();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(snapshotDate)) throw new Error('Fecha de la foto inválida (YYYY-MM-DD).');
+  const admin = createAdminClient();
+  const { error: e1 } = await admin.from('stock_snapshots').delete().eq('store_id', storeId).eq('snapshot_date', snapshotDate);
+  if (e1) throw new Error(`stock_snapshots: ${e1.message}`);
+  const { error: e2 } = await admin.from('stock_current').delete().eq('store_id', storeId);
+  if (e2) throw new Error(`stock_current: ${e2.message}`);
+}
+
+// Inserta un lote de stock (snapshot por fecha + stock vigente + catálogo).
+export async function appendStockSnapshot(storeId: string, snapshotDate: string, rows: StockInsert[]) {
+  await assertAdmin();
+  if (rows.length === 0) return { ok: 0 };
+  const now = new Date().toISOString();
+  await upsertChunked(
+    'stock_snapshots',
+    rows.map((r) => ({ store_id: storeId, snapshot_date: snapshotDate, updated_at: now, ...r })),
+    'store_id,sku,snapshot_date',
+  );
+  await upsertChunked(
+    'stock_current',
+    rows.map(({ classification, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
+    'store_id,sku',
+  );
+  // Catálogo derivado del stock (sku, nombre, familia/categoría).
+  const products = rows.map((r) => {
+    const variant = [r.color, r.talla].filter(Boolean).join(' ');
+    const name = r.description ? (variant ? `${r.description} (${variant})` : r.description) : r.sku;
+    return { sku: r.sku, name, family: r.group_name, category: r.sap_line, updated_at: now };
+  });
+  await upsertChunked('products', products, 'sku');
+  return { ok: rows.length };
+}
+
+// Cierra la carga de la foto: refresca el almacén de la semana de esa fecha.
+export async function finalizeStockSnapshot(storeId: string, snapshotDate: string, rows: number) {
+  const uid = await assertAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.rpc('apply_stock_snapshot', { p_store_id: storeId, p_date: snapshotDate });
+  if (error) throw new Error(`apply_stock_snapshot: ${error.message}`);
+  await logImport({ kind: 'stock_snapshot', storeId, week: null, rowsOk: rows, rowsError: 0, createdBy: uid });
+}
+
 // rawRows ya vienen con `storeId` resuelto por fila (una tienda por fila,
 // varias tiendas por archivo). Se agrupa y procesa una vez por tienda.
 export async function importSalesDaily(rawRows: (SalesDailyRow & { storeId: string })[]) {

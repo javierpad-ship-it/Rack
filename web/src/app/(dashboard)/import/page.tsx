@@ -12,7 +12,16 @@ import {
   type SalesDailyRow,
   type StockSnapshotRow,
 } from '@/lib/import/parseExcel';
-import { importSales, importStock, importSalesDaily, importStockSnapshot, existingSalesDates } from './actions';
+import {
+  importSales,
+  importStock,
+  existingSalesDates,
+  appendSalesDaily,
+  recomputeSalesDaily,
+  beginStockSnapshot,
+  appendStockSnapshot,
+  finalizeStockSnapshot,
+} from './actions';
 import { resolveStoreLabels } from '../store-aliases/actions';
 import type { Store } from '@/lib/types';
 
@@ -109,9 +118,40 @@ export default function ImportPage() {
             return;
           }
         }
-        const r = await importSalesDaily(resolved);
+        // Agrega en el navegador por (tienda, fecha, sku) y sube en lotes para
+        // no exceder el límite de tamaño de los Server Actions.
+        const agg = new Map<string, { store_id: string; sale_date: string; sku: string } & Record<string, unknown>>();
+        const range = new Map<string, { from: string; to: string; rows: number }>();
+        for (const row of resolved) {
+          const { store_label, storeId: sid, ...rest } = row;
+          const key = `${sid}|${rest.sale_date}|${rest.sku}`;
+          const prev = agg.get(key) as (typeof rest & { store_id: string }) | undefined;
+          if (prev) {
+            prev.units += rest.units;
+            prev.amount += rest.amount;
+            prev.margin += rest.margin;
+          } else {
+            agg.set(key, { store_id: sid, ...rest });
+          }
+          const rg = range.get(sid);
+          if (!rg) range.set(sid, { from: rest.sale_date, to: rest.sale_date, rows: 0 });
+          else {
+            if (rest.sale_date < rg.from) rg.from = rest.sale_date;
+            if (rest.sale_date > rg.to) rg.to = rest.sale_date;
+          }
+        }
+        const aggRows = [...agg.values()];
+        for (const rg of range.values()) rg.rows = 0;
+        const CHUNK = 4000;
+        for (let i = 0; i < aggRows.length; i += CHUNK) {
+          await appendSalesDaily(aggRows.slice(i, i + CHUNK) as never);
+          setStatus(`Subiendo ventas… ${Math.min(100, Math.round(((i + CHUNK) / aggRows.length) * 100))}%`);
+        }
+        setStatus('Recalculando semanas y atribución…');
+        const ranges = [...range.entries()].map(([storeId, rg]) => ({ storeId, from: rg.from, to: rg.to, rows: 0 }));
+        await recomputeSalesDaily(ranges);
         setStatus(
-          `Ventas diarias: ${r.ok} líneas guardadas y atribuidas. ${errors.length} con error de formato.` +
+          `Ventas diarias: ${aggRows.length} líneas guardadas y atribuidas. ${errors.length} con error de formato.` +
             (dup.length > 0 ? ` Se reemplazaron ${dup.length} combinación(es) tienda/día.` : '') +
             unmappedMsg(unmapped),
         );
@@ -128,9 +168,30 @@ export default function ImportPage() {
           return;
         }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(stockDate)) throw new Error('Elegí la fecha de la foto de stock.');
-        const r = await importStockSnapshot(resolved, stockDate);
+        // Dedup por (tienda, sku) y subida por lotes: begin (borra) → append × N → finalize.
+        const byStore = new Map<string, Map<string, Record<string, unknown>>>();
+        for (const row of resolved) {
+          const { store_label, storeId: sid, ...rest } = row;
+          if (!byStore.has(sid)) byStore.set(sid, new Map());
+          byStore.get(sid)!.set(rest.sku, rest);
+        }
+        let total = 0;
+        const CHUNK = 2000;
+        for (const [sid, m] of byStore) {
+          const rowsArr = [...m.values()];
+          await beginStockSnapshot(sid, stockDate);
+          for (let i = 0; i < rowsArr.length; i += CHUNK) {
+            await appendStockSnapshot(sid, stockDate, rowsArr.slice(i, i + CHUNK) as never);
+            setStatus(
+              `Subiendo stock (${stores.find((s) => s.id === sid)?.name ?? sid})… ` +
+                `${Math.min(100, Math.round(((i + CHUNK) / rowsArr.length) * 100))}%`,
+            );
+          }
+          await finalizeStockSnapshot(sid, stockDate, rowsArr.length);
+          total += rowsArr.length;
+        }
         setStatus(
-          `Stock al ${stockDate}: ${r.ok} variantes guardadas (foto por fecha + stock vigente). ` +
+          `Stock al ${stockDate}: ${total} variantes guardadas (foto por fecha + stock vigente). ` +
             `${errors.length} con error de formato.${unmappedMsg(unmapped)}`,
         );
       } else {
