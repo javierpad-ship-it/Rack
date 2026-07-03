@@ -6,7 +6,10 @@ import type { Store, UserRole } from '@/lib/types';
 import { listUsers, createUser, updateUser, deleteUser, type UserRow } from './actions';
 import PasswordInput from '@/components/PasswordInput';
 
-const ROLES: UserRole[] = ['admin', 'analista', 'visual', 'encargado', 'operario', 'reponedor'];
+// El 'operario' de tienda usa AMBAS apps (Inventario y Repo) con el mismo
+// login: un solo perfil por tienda para las dos tareas. La app distingue
+// auditoría vs reposición por su tipo (flavor), no por el rol del usuario.
+const ROLES: UserRole[] = ['admin', 'analista', 'visual', 'encargado', 'operario'];
 
 export default function UsersPage() {
   const supabase = createClient();
@@ -149,7 +152,8 @@ export default function UsersPage() {
         </tbody>
       </table>
       <p className="muted" style={{ fontSize: 12 }}>
-        Nota: la columna Tienda aplica a roles visual / encargado / operario / reponedor.
+        Nota: la columna Tienda aplica a roles visual / encargado / operario. El operario de la
+        tienda usa las dos apps (Inventario y Repo) con el mismo usuario.
       </p>
     </div>
   );
