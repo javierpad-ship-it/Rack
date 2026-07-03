@@ -206,6 +206,8 @@ export interface StockSnapshotRow {
   brand: string | null;
   arrival_year: string | null;
   classification: string | null;
+  mundo: string | null;     // MUNDO_LK
+  embarque: string | null;  // EXTRA1_LK (ej. "SIN EMBARQUE")
 }
 
 // Stock vigente del POS por variante (Stk Fin Act / Stk Val Act / Costo Prom).
@@ -234,6 +236,8 @@ export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshot
       brand: (pick(r, ['marca', 'brand', 'agrup_marca_lk']) as string | null) ?? null,
       arrival_year: (pick(r, ['anio_llegada_lk', 'anio llegada', 'ano llegada', 'anio', 'ano']) as string | null)?.toString() ?? null,
       classification: (pick(r, ['clasificacion', 'classification', 'estado']) as string | null) ?? null,
+      mundo: (pick(r, ['mundo_lk', 'mundo']) as string | null) ?? null,
+      embarque: (pick(r, ['extra1_lk', 'embarque']) as string | null) ?? null,
     });
   });
   return { rows, errors };

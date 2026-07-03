@@ -197,7 +197,8 @@ export async function appendStockSnapshot(storeId: string, snapshotDate: string,
   );
   await upsertChunked(
     'stock_current',
-    rows.map(({ classification, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
+    // stock_current no tiene classification/mundo/embarque: se excluyen.
+    rows.map(({ classification, mundo, embarque, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
     'store_id,sku',
   );
   // Catálogo derivado del stock (sku, nombre, familia/categoría).
@@ -331,7 +332,7 @@ export async function importStockSnapshot(
     if (delErr) throw new Error(`stock_current: ${delErr.message}`);
     await upsertChunked(
       'stock_current',
-      rows.map(({ classification, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
+      rows.map(({ classification, mundo, embarque, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
       'store_id,sku',
     );
 
