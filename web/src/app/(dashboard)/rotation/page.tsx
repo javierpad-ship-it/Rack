@@ -56,7 +56,14 @@ export default function RotationPage() {
   useEffect(() => {
     supabase.from('stores').select('*').order('name').then(({ data }) => setStores((data ?? []) as Store[]));
     supabase.rpc('rotation_filters').then(({ data }) => {
-      if (data) setOpts(data as Filters);
+      const d = (data ?? {}) as Partial<Filters>;
+      setOpts({
+        gender: d.gender ?? [],
+        mundo: d.mundo ?? [],
+        embarque: d.embarque ?? [],
+        brand: d.brand ?? [],
+        linea: d.linea ?? [],
+      });
     });
   }, [supabase]);
 
@@ -75,8 +82,22 @@ export default function RotationPage() {
       p_brand: brand || null,
       p_linea: linea || null,
     });
-    if (error) setError(error.message);
-    else setReport(data as Report);
+    if (error) {
+      setError(error.message);
+      setReport(null);
+    } else {
+      const d = (data ?? {}) as Partial<Report>;
+      setReport({
+        snap: d.snap ?? null,
+        complete: d.complete ?? true,
+        days_total: d.days_total ?? 0,
+        days_elapsed: d.days_elapsed ?? 0,
+        kpis: d.kpis ?? { cant: 0, val: 0, stk: 0, stk_val: 0, irp: 0, proy_cant: 0, irp_proy: 0 },
+        by_linea: Array.isArray(d.by_linea) ? d.by_linea : [],
+        price_hm: Array.isArray(d.price_hm) ? d.price_hm : [],
+        talla_hm: Array.isArray(d.talla_hm) ? d.talla_hm : [],
+      });
+    }
     setLoading(false);
   }, [supabase, year, month, storeId, gender, mundo, embarque, brand, linea]);
 
@@ -157,7 +178,7 @@ export default function RotationPage() {
               </tr>
             </thead>
             <tbody>
-              {report!.by_linea.map((r) => (
+              {(report?.by_linea ?? []).map((r) => (
                 <tr key={r.linea}>
                   <td>{r.linea}</td>
                   <td>{fmt(r.cant)}</td>
@@ -168,7 +189,7 @@ export default function RotationPage() {
                   {!report?.complete && <td><span style={{ color: irpColor(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
               ))}
-              {report!.by_linea.length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
+              {(report?.by_linea ?? []).length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
             </tbody>
           </table>
 
