@@ -41,6 +41,7 @@ export interface Fixture {
 
 export interface StoreLayout {
   store_id: string;
+  floor: number;
   image_url: string | null;
   image_width: number | null;
   image_height: number | null;

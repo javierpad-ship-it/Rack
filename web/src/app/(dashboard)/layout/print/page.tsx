@@ -8,10 +8,12 @@ export default function PlanPrintPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
+  const [floor, setFloor] = useState(1);
   const [layout, setLayout] = useState<StoreLayout | null>(null);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
 
   const store = stores.find((s) => s.id === storeId);
+  const floorCount = store?.floors ?? 1;
 
   useEffect(() => {
     supabase
@@ -25,15 +27,25 @@ export default function PlanPrintPage() {
       });
   }, [supabase]);
 
+  // Si cambia la tienda y el piso elegido no existe, volver al piso 1.
+  useEffect(() => {
+    if (floor > floorCount) setFloor(1);
+  }, [floorCount, floor]);
+
   const load = useCallback(async () => {
     if (!storeId) return;
     const [{ data: lay }, { data: fx }] = await Promise.all([
-      supabase.from('store_layouts').select('*').eq('store_id', storeId).maybeSingle(),
-      supabase.from('fixtures').select('*').eq('store_id', storeId).order('name'),
+      supabase
+        .from('store_layouts')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('floor', floor)
+        .maybeSingle(),
+      supabase.from('fixtures').select('*').eq('store_id', storeId).eq('floor', floor).order('name'),
     ]);
     setLayout((lay as StoreLayout) ?? null);
     setFixtures((fx ?? []) as Fixture[]);
-  }, [supabase, storeId]);
+  }, [supabase, storeId, floor]);
 
   useEffect(() => {
     load();
@@ -112,7 +124,7 @@ export default function PlanPrintPage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `plano-${store?.code ?? 'tienda'}.jpg`;
+            a.download = `plano-${store?.code ?? 'tienda'}${floorCount > 1 ? `-piso${floor}` : ''}.jpg`;
             a.click();
             URL.revokeObjectURL(url);
           },
@@ -141,6 +153,18 @@ export default function PlanPrintPage() {
             ))}
           </select>
         </label>
+        {floorCount > 1 && (
+          <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            Piso
+            <select value={floor} onChange={(e) => setFloor(Number(e.target.value))}>
+              {Array.from({ length: floorCount }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button onClick={downloadJpg} disabled={!layout?.image_url}>
           Descargar JPG
         </button>
@@ -152,7 +176,9 @@ export default function PlanPrintPage() {
       <div className="plan-sheet">
         <div className="plan-head">
           <strong>{store?.name ?? ''}</strong>
-          <span className="muted"> · Plano de muebles · {placed.length} ubicados</span>
+          <span className="muted">
+            {floorCount > 1 ? ` · Piso ${floor}` : ''} · Plano de muebles · {placed.length} ubicados
+          </span>
         </div>
 
         {layout?.image_url ? (

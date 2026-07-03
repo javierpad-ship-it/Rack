@@ -11,11 +11,17 @@ export default function LayoutPlanPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
+  const [floor, setFloor] = useState(1);
   const [layout, setLayout] = useState<StoreLayout | null>(null);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [status, setStatus] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  const selectedStore = stores.find((s) => s.id === storeId);
+  const floorCount = selectedStore?.floors ?? 1;
+  // Muebles del piso elegido (los pines y la lista solo muestran este piso).
+  const floorFixtures = fixtures.filter((f) => f.floor === floor);
 
   useEffect(() => {
     supabase
@@ -29,15 +35,25 @@ export default function LayoutPlanPage() {
       });
   }, [supabase]);
 
+  // Si cambia la tienda y el piso elegido no existe, volver al piso 1.
+  useEffect(() => {
+    if (floor > floorCount) setFloor(1);
+  }, [floorCount, floor]);
+
   const load = useCallback(async () => {
     if (!storeId) return;
     const [{ data: lay }, { data: fx }] = await Promise.all([
-      supabase.from('store_layouts').select('*').eq('store_id', storeId).maybeSingle(),
+      supabase
+        .from('store_layouts')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('floor', floor)
+        .maybeSingle(),
       supabase.from('fixtures').select('*').eq('store_id', storeId).order('name'),
     ]);
     setLayout((lay as StoreLayout) ?? null);
     setFixtures((fx ?? []) as Fixture[]);
-  }, [supabase, storeId]);
+  }, [supabase, storeId, floor]);
 
   useEffect(() => {
     load();
@@ -47,7 +63,7 @@ export default function LayoutPlanPage() {
     const file = e.target.files?.[0];
     if (!file || !storeId) return;
     setStatus('Subiendo plano…');
-    const path = `${storeId}/plano-${Date.now()}.${file.name.split('.').pop()}`;
+    const path = `${storeId}/piso-${floor}-${Date.now()}.${file.name.split('.').pop()}`;
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
     if (upErr) {
       setStatus(`Error al subir: ${upErr.message}`);
@@ -56,7 +72,7 @@ export default function LayoutPlanPage() {
     const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
     const { error } = await supabase
       .from('store_layouts')
-      .upsert({ store_id: storeId, image_url: pub.publicUrl }, { onConflict: 'store_id' });
+      .upsert({ store_id: storeId, floor, image_url: pub.publicUrl }, { onConflict: 'store_id,floor' });
     setStatus(error ? `Error: ${error.message}` : 'Plano actualizado.');
     load();
     e.target.value = '';
@@ -93,6 +109,18 @@ export default function LayoutPlanPage() {
             ))}
           </select>
         </label>
+        {floorCount > 1 && (
+          <label>
+            Piso{' '}
+            <select value={floor} onChange={(e) => setFloor(Number(e.target.value))}>
+              {Array.from({ length: floorCount }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Subir plano <input type="file" accept="image/*" onChange={onUpload} />
         </label>
@@ -106,10 +134,10 @@ export default function LayoutPlanPage() {
         <div className="panel">
           <strong>Muebles</strong>
           <p className="muted" style={{ fontSize: 12 }}>
-            Elegí uno y hacé clic en el plano para ubicarlo.
+            {floorCount > 1 ? `Piso ${floor}. ` : ''}Elegí uno y hacé clic en el plano para ubicarlo.
           </p>
           <div style={{ display: 'grid', gap: 4, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-            {fixtures.map((f) => (
+            {floorFixtures.map((f) => (
               <button
                 key={f.id}
                 className={selected === f.id ? '' : 'secondary'}
@@ -119,7 +147,7 @@ export default function LayoutPlanPage() {
                 {f.name} {f.pin_x != null ? '📍' : ''}
               </button>
             ))}
-            {fixtures.length === 0 && <span className="muted">Sin muebles.</span>}
+            {floorFixtures.length === 0 && <span className="muted">Sin muebles en este piso.</span>}
           </div>
         </div>
 
@@ -133,7 +161,7 @@ export default function LayoutPlanPage() {
                 onClick={onImageClick}
                 style={{ maxWidth: '100%', cursor: 'crosshair', display: 'block' }}
               />
-              {fixtures
+              {floorFixtures
                 .filter((f) => f.pin_x != null && f.pin_y != null)
                 .map((f) => (
                   <span
