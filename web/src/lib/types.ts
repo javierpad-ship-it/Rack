@@ -56,6 +56,7 @@ export interface WeeklyFixtureMetric {
   units_sold: number;
   amount_sold: number;
   exposed_units: number;
+  remaining_units: number;
   rotation: number | null;
 }
 

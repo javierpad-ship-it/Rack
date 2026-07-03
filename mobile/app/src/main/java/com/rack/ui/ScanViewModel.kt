@@ -8,12 +8,15 @@ import com.rack.data.FixtureEntity
 import com.rack.data.RackDatabase
 import com.rack.data.ScanLineEntity
 import com.rack.data.ScanSessionEntity
+import com.rack.data.PendingSessionSummary
 import com.rack.net.SessionStore
 import com.rack.sync.SyncScheduler
 import com.rack.util.IsoWeek
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -41,6 +44,11 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _state = MutableStateFlow(ScanUiState())
     val state: StateFlow<ScanUiState> = _state.asStateFlow()
+
+    /** Sesiones locales sin sincronizar (para el menú). Se vacían solas al subir. */
+    val pending: StateFlow<List<PendingSessionSummary>> =
+        db.dao().pendingSessionSummaries()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val counts = linkedMapOf<String, Int>()
     private val names = mutableMapOf<String, String>()

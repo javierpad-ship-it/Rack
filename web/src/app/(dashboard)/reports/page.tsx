@@ -15,6 +15,8 @@ interface WoWRow {
   amount_prev: number;
   delta_units: number;
   delta_pct: number | null;
+  exposed_now: number;
+  remaining_now: number;
 }
 
 interface UnattributedRow {
@@ -120,6 +122,7 @@ export default function ReportsPage() {
               <th>Unid. (prev)</th>
               <th>Δ unid.</th>
               <th>Δ %</th>
+              <th>En piso (actual)</th>
               <th>Importe ({week})</th>
             </tr>
           </thead>
@@ -134,12 +137,15 @@ export default function ReportsPage() {
                   {fmt(r.delta_units)}
                 </td>
                 <td className="muted">{r.delta_pct != null ? `${r.delta_pct}%` : '—'}</td>
+                <td title={`Escaneado: ${fmt(r.exposed_now)} · Vendido: ${fmt(r.units_now)}`}>
+                  {fmt(r.remaining_now)} u
+                </td>
                 <td>${fmt(r.amount_now)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   Sin métricas para esta semana. Importá ventas y asegurate de haber escaneado los muebles.
                 </td>
               </tr>

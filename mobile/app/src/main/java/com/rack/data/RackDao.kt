@@ -5,6 +5,18 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
+
+/** Resumen de una sesión local pendiente de sincronizar (para el menú). */
+data class PendingSessionSummary(
+    val clientUid: String,
+    val fixtureName: String?,
+    val week: String,
+    val scannedAt: Long,
+    val kind: String,
+    val skus: Int,
+    val units: Int,
+)
 
 @Dao
 interface RackDao {
@@ -47,6 +59,30 @@ interface RackDao {
 
     @Query("SELECT COUNT(*) FROM scan_sessions WHERE synced = 0")
     suspend fun pendingCount(): Int
+
+    /**
+     * Sesiones guardadas aún sin sincronizar, con el nombre del mueble y el
+     * total de SKUs/unidades. Es un Flow: al marcarse como sincronizada, la
+     * sesión desaparece sola de la lista. Ordena de más reciente a más antigua.
+     */
+    @Query(
+        """
+        SELECT s.clientUid AS clientUid,
+               f.name       AS fixtureName,
+               s.week       AS week,
+               s.scannedAt  AS scannedAt,
+               s.kind       AS kind,
+               COUNT(l.sku) AS skus,
+               COALESCE(SUM(l.quantity), 0) AS units
+        FROM scan_sessions s
+        LEFT JOIN fixtures f  ON f.id = s.fixtureId
+        LEFT JOIN scan_lines l ON l.sessionUid = s.clientUid
+        WHERE s.synced = 0
+        GROUP BY s.clientUid
+        ORDER BY s.scannedAt DESC
+        """,
+    )
+    fun pendingSessionSummaries(): Flow<List<PendingSessionSummary>>
 
     /** Guarda una sesión y sus líneas como una unidad transaccional. */
     @Transaction
