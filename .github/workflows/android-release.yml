@@ -32,19 +32,32 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode upload keystore
-        run: echo "${{ secrets.RACK_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > rack-one-upload.keystore
+      - name: Decode & verify upload keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.RACK_UPLOAD_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.RACK_UPLOAD_STORE_PASSWORD }}
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 -d > rack-one-upload.keystore
+          if ! keytool -list -keystore rack-one-upload.keystore -storepass "$KS_PASS" >/dev/null 2>&1; then
+            echo "::error::Keystore inválido. Revisá el secret RACK_UPLOAD_KEYSTORE_BASE64 (pegá TODO el contenido del .txt, una sola línea) y RACK_UPLOAD_STORE_PASSWORD."
+            exit 1
+          fi
+          echo "Keystore OK ($(stat -c%s rack-one-upload.keystore) bytes)"
 
+      # Los valores se pasan como env ORG_GRADLE_PROJECT_*, que Gradle mapea a
+      # propiedades de proyecto (findProperty). Así evitamos interpolarlos en la
+      # línea de comando del shell (comillas/caracteres especiales rompían el build).
       - name: Build signed release AABs (Inventario + Repo)
+        env:
+          ORG_GRADLE_PROJECT_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xeuezawuivushqrkzjqq.supabase.co' }}
+          ORG_GRADLE_PROJECT_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_hluqQhuiQ4JMTNNAu8kctQ_0TbjPtzL' }}
+          ORG_GRADLE_PROJECT_RACK_UPLOAD_STORE_FILE: ${{ github.workspace }}/mobile/rack-one-upload.keystore
+          ORG_GRADLE_PROJECT_RACK_UPLOAD_STORE_PASSWORD: ${{ secrets.RACK_UPLOAD_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_RACK_UPLOAD_KEY_ALIAS: ${{ secrets.RACK_UPLOAD_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_RACK_UPLOAD_KEY_PASSWORD: ${{ secrets.RACK_UPLOAD_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon bundleRelease \
-            -PSUPABASE_URL="${{ vars.SUPABASE_URL || 'https://xeuezawuivushqrkzjqq.supabase.co' }}" \
-            -PSUPABASE_ANON_KEY="${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_hluqQhuiQ4JMTNNAu8kctQ_0TbjPtzL' }}" \
-            -PRACK_UPLOAD_STORE_FILE="$(pwd)/rack-one-upload.keystore" \
-            -PRACK_UPLOAD_STORE_PASSWORD="${{ secrets.RACK_UPLOAD_STORE_PASSWORD }}" \
-            -PRACK_UPLOAD_KEY_ALIAS="${{ secrets.RACK_UPLOAD_KEY_ALIAS }}" \
-            -PRACK_UPLOAD_KEY_PASSWORD="${{ secrets.RACK_UPLOAD_KEY_PASSWORD }}"
+          ./gradlew --no-daemon --stacktrace bundleRelease
 
       - name: Remove keystore from runner
         if: always()
