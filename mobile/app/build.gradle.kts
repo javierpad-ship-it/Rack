@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.rack"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.geeksapp.rackone"
         minSdk = 24          // cubre equipos Honeywell con Android 7+
-        targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        targetSdk = 35       // requisito de Google Play (API 35+)
+        versionCode = 2
+        versionName = "0.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Configurar en local.properties / CI; se leen vía BuildConfig.
