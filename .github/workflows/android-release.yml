@@ -49,14 +49,17 @@ jobs:
           fi
           echo "Keystore + alias OK ($(stat -c%s rack-one-upload.keystore) bytes)"
 
+      - name: Compute version code
+        run: echo "VERSION_CODE=$(( GITHUB_RUN_NUMBER + 100 ))" >> "$GITHUB_ENV"
+
       # Los valores se pasan como env ORG_GRADLE_PROJECT_*, que Gradle mapea a
       # propiedades de proyecto (findProperty). Así evitamos interpolarlos en la
       # línea de comando del shell (comillas/caracteres especiales rompían el build).
       - name: Build signed release AABs (Inventario + Repo)
         env:
           # versionCode único y creciente por corrida (Play no permite reusar).
-          # +100 para quedar por encima de los códigos ya subidos manualmente.
-          ORG_GRADLE_PROJECT_VERSION_CODE: ${{ github.run_number + 100 }}
+          # Se calcula en el paso anterior (run_number + 100) y llega por env.
+          ORG_GRADLE_PROJECT_VERSION_CODE: ${{ env.VERSION_CODE }}
           ORG_GRADLE_PROJECT_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xeuezawuivushqrkzjqq.supabase.co' }}
           ORG_GRADLE_PROJECT_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_hluqQhuiQ4JMTNNAu8kctQ_0TbjPtzL' }}
           ORG_GRADLE_PROJECT_RACK_UPLOAD_STORE_FILE: ${{ github.workspace }}/mobile/rack-one-upload.keystore
