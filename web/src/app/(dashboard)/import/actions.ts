@@ -132,6 +132,19 @@ export async function existingSalesDates(
 // no exceder el límite de tamaño de los Server Actions. El recálculo va aparte,
 // una sola vez al final.
 
+// Última fecha de ventas cargada (para el calendario de la pantalla de import).
+export async function lastSalesDate(): Promise<string | null> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('sales_daily')
+    .select('sale_date')
+    .order('sale_date', { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return (data?.[0]?.sale_date as string | undefined) ?? null;
+}
+
 type SalesDailyInsert = Omit<SalesDailyRow, 'store_label'> & { store_id: string };
 
 // Inserta un lote de ventas diarias (ya agregadas por store/sku/fecha). No recomputa.

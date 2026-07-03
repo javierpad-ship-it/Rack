@@ -16,6 +16,7 @@ import {
   beginStockSnapshot,
   appendStockSnapshot,
   finalizeStockSnapshot,
+  lastSalesDate,
 } from './actions';
 import { resolveStoreLabels } from '../store-aliases/actions';
 import type { Store } from '@/lib/types';
@@ -55,6 +56,55 @@ function unmappedMsg(unmapped: { label: string; count: number }[]): string {
   return ` ⚠️ Sin mapear (no se cargaron): ${list}. Agregalas en Mapeo de tiendas.`;
 }
 
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// Calendario de un mes con los días ya cargados (día <= última fecha) marcados.
+function MonthCalendar({ year, month0, last, today }: { year: number; month0: number; last: string | null; today: string }) {
+  const first = new Date(year, month0, 1);
+  const startDow = first.getDay(); // 0 = domingo
+  const daysInMonth = new Date(year, month0 + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const title = first.toLocaleDateString('es', { month: 'long', year: 'numeric' });
+  const iso = (d: number) => `${year}-${String(month0 + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  return (
+    <div style={{ minWidth: 220 }}>
+      <div style={{ textAlign: 'center', textTransform: 'capitalize', fontWeight: 600, marginBottom: 6 }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, fontSize: 12 }}>
+        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((w, i) => (
+          <div key={i} style={{ textAlign: 'center', color: '#7E93C6', fontSize: 11 }}>{w}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (d == null) return <div key={i} />;
+          const s = iso(d);
+          const loaded = last != null && s <= last;
+          const isToday = s === today;
+          return (
+            <div
+              key={i}
+              title={loaded ? 'Ventas cargadas' : 'Sin cargar'}
+              style={{
+                textAlign: 'center',
+                padding: '4px 0',
+                borderRadius: 5,
+                background: loaded ? '#2B5BE2' : '#EEF2FB',
+                color: loaded ? '#fff' : '#495a80',
+                outline: isToday ? '2px solid #142A6E' : 'none',
+              }}
+            >
+              {d}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ImportPage() {
   const supabase = createClient();
   const [kind, setKind] = useState<Kind>('sales_daily');
@@ -63,6 +113,7 @@ export default function ImportPage() {
   const [stockDate, setStockDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [lastSales, setLastSales] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -71,6 +122,12 @@ export default function ImportPage() {
       .order('name')
       .then(({ data }) => setStores((data ?? []) as Store[]));
   }, [supabase]);
+
+  // Al abrir Ventas (y tras cargar), consulta hasta qué día hay ventas.
+  useEffect(() => {
+    if (kind !== 'sales_daily') return;
+    lastSalesDate().then(setLastSales).catch(() => setLastSales(null));
+  }, [kind, status]);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id;
 
@@ -211,11 +268,37 @@ export default function ImportPage() {
           Si una tienda no está mapeada, esas filas no se cargan y te avisamos cuáles son.
         </p>
         {kind === 'sales_daily' && (
-          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            La fecha sale del archivo (columna <b>FECHA</b> tipo DD/MM/AAAA). Cruza por{' '}
-            <b>CODIGO_VARIANTE</b>; usa Cant Act / Venta Act / MG Act. Si el día ya estaba cargado para
-            esa tienda, te avisa antes de reemplazarlo.
-          </p>
+          <>
+            <p style={{ fontSize: 13, margin: 0 }}>
+              {lastSales ? (
+                <>
+                  Ventas cargadas hasta <b>{fmtDate(lastSales)}</b>. Subí el archivo con los días
+                  siguientes.
+                </>
+              ) : (
+                'Aún no hay ventas cargadas.'
+              )}
+            </p>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+              {(() => {
+                const t = new Date();
+                const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+                const prevY = t.getMonth() === 0 ? t.getFullYear() - 1 : t.getFullYear();
+                const prevM = t.getMonth() === 0 ? 11 : t.getMonth() - 1;
+                return (
+                  <>
+                    <MonthCalendar year={prevY} month0={prevM} last={lastSales} today={today} />
+                    <MonthCalendar year={t.getFullYear()} month0={t.getMonth()} last={lastSales} today={today} />
+                  </>
+                );
+              })()}
+            </div>
+            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+              Azul = días con ventas cargadas. La fecha sale del archivo (columna <b>FECHA</b>,
+              DD/MM/AAAA); usa Cant Act / Venta Act / MG Act. Si un día ya estaba cargado, te avisa
+              antes de reemplazarlo.
+            </p>
+          </>
         )}
         {kind === 'stock_snapshot' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
