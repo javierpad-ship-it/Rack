@@ -187,10 +187,16 @@ export async function importSalesDaily(rawRows: (SalesDailyRow & { storeId: stri
 }
 
 // rawRows ya vienen con `storeId` resuelto por fila (una tienda por fila,
-// varias tiendas por archivo). Se agrupa y procesa una vez por tienda.
-export async function importStockSnapshot(rawRows: (StockSnapshotRow & { storeId: string })[]) {
+// varias tiendas por archivo). `snapshotDate` (YYYY-MM-DD) es la fecha de la
+// foto de stock, elegida en la UI: se guarda por fecha para conservar el cierre
+// de mes. La foto también actualiza el stock vigente (stock_current).
+export async function importStockSnapshot(
+  rawRows: (StockSnapshotRow & { storeId: string })[],
+  snapshotDate: string,
+) {
   const uid = await assertAdmin();
   if (rawRows.length === 0) return { ok: 0 };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(snapshotDate)) throw new Error('Fecha de la foto inválida (YYYY-MM-DD).');
   const admin = createAdminClient();
 
   const byStore = new Map<string, (StockSnapshotRow & { storeId: string })[]>();
@@ -205,7 +211,7 @@ export async function importStockSnapshot(rawRows: (StockSnapshotRow & { storeId
   const catalogMap = new Map<string, Omit<StockSnapshotRow, 'store_label'>>();
 
   for (const [storeId, storeRows] of byStore) {
-    // Dedup por variante (último gana) para respetar la PK (store_id, sku).
+    // Dedup por variante (último gana) para respetar la PK (store_id, sku, fecha).
     const map = new Map<string, Omit<StockSnapshotRow, 'store_label'>>();
     for (const r of storeRows) {
       const { storeId: _sid, store_label, ...rest } = r;
@@ -214,17 +220,34 @@ export async function importStockSnapshot(rawRows: (StockSnapshotRow & { storeId
     }
     const rows = [...map.values()];
 
-    // Reemplazar la foto: borrar el stock vigente de esa tienda e insertar el nuevo.
+    // Guardar la foto con su fecha: reemplaza SOLO esa (tienda, fecha).
+    const { error: delSnapErr } = await admin
+      .from('stock_snapshots')
+      .delete()
+      .eq('store_id', storeId)
+      .eq('snapshot_date', snapshotDate);
+    if (delSnapErr) throw new Error(`stock_snapshots: ${delSnapErr.message}`);
+    await upsertChunked(
+      'stock_snapshots',
+      rows.map((r) => ({ store_id: storeId, snapshot_date: snapshotDate, updated_at: now, ...r })),
+      'store_id,sku,snapshot_date',
+    );
+
+    // Foto vigente (stock_current) = la que se acaba de cargar. stock_current no
+    // tiene columna classification, así que se excluye.
     const { error: delErr } = await admin.from('stock_current').delete().eq('store_id', storeId);
     if (delErr) throw new Error(`stock_current: ${delErr.message}`);
     await upsertChunked(
       'stock_current',
-      rows.map((r) => ({ store_id: storeId, updated_at: now, ...r })),
+      rows.map(({ classification, ...r }) => ({ store_id: storeId, updated_at: now, ...r })),
       'store_id,sku',
     );
 
-    // Refrescar el almacén deducido de la semana vigente con las nuevas unidades.
-    const { error } = await admin.rpc('apply_stock_snapshot', { p_store_id: storeId });
+    // Refrescar el almacén deducido de la semana comercial de la fecha de la foto.
+    const { error } = await admin.rpc('apply_stock_snapshot', {
+      p_store_id: storeId,
+      p_date: snapshotDate,
+    });
     if (error) throw new Error(`apply_stock_snapshot: ${error.message}`);
 
     await logImport({ kind: 'stock_snapshot', storeId, week: null, rowsOk: rows.length, rowsError: 0, createdBy: uid });

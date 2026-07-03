@@ -1,13 +1,31 @@
 import * as XLSX from 'xlsx';
 
-// Normaliza encabezados: minúsculas, sin acentos, sin espacios extra.
+// Normaliza encabezados: minúsculas, sin acentos, sin puntos, sin espacios extra.
+// (Quita el punto para que "Costo Prom." matchee con "costo prom".)
 function normHeader(h: string): string {
   return h
     .toString()
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\./g, '')
+    .trim();
+}
+
+// Normaliza una fecha a YYYY-MM-DD. Acepta YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY
+// y objetos Date (por si XLSX ya la parseó).
+function normalizeDate(v: unknown): string | null {
+  if (v == null || v === '') return null;
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); // YYYY-MM-DD
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})/); // DD/MM/YYYY o DD-MM-YYYY
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return null;
 }
 
 export interface ParseResult<T> {
@@ -149,10 +167,10 @@ export function parseSalesDaily(file: ArrayBuffer): ParseResult<SalesDailyRow> {
     }
     const directDate = pick(r, ['fecha', 'date', 'dia_completo']);
     const sale_date = directDate
-      ? String(directDate).slice(0, 10)
+      ? normalizeDate(directDate)
       : buildDate(pick(r, ['mes_ano', 'mes_año', 'mes', 'periodo']), pick(r, ['dia', 'day']));
     if (!sale_date || !/^\d{4}-\d{2}-\d{2}$/.test(sale_date)) {
-      errors.push({ row: i + 2, message: 'Fecha inválida (MES_AÑO + DIA)' });
+      errors.push({ row: i + 2, message: 'Fecha inválida (FECHA o MES_AÑO + DIA)' });
       return;
     }
     rows.push({
@@ -187,6 +205,7 @@ export interface StockSnapshotRow {
   talla: string | null;
   brand: string | null;
   arrival_year: string | null;
+  classification: string | null;
 }
 
 // Stock vigente del POS por variante (Stk Fin Act / Stk Val Act / Costo Prom).
@@ -209,11 +228,12 @@ export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshot
       description: (pick(r, ['descripcion_articulo', 'descripcion articulo', 'descripcion', 'detalle']) as string | null) ?? null,
       group_name: (pick(r, ['grupo_producto', 'grupo producto', 'grupo']) as string | null) ?? null,
       sap_line: (pick(r, ['linea sap', 'linea_sap', 'linea']) as string | null) ?? null,
-      gender: (pick(r, ['genero lukers', 'genero', 'sexo']) as string | null) ?? null,
+      gender: (pick(r, ['genero lukers', 'genero_lk', 'genero', 'sexo']) as string | null) ?? null,
       color: (pick(r, ['color']) as string | null) ?? null,
       talla: (pick(r, ['talla', 'talle', 'size']) as string | null) ?? null,
-      brand: (pick(r, ['marca', 'brand']) as string | null) ?? null,
+      brand: (pick(r, ['marca', 'brand', 'agrup_marca_lk']) as string | null) ?? null,
       arrival_year: (pick(r, ['anio_llegada_lk', 'anio llegada', 'ano llegada', 'anio', 'ano']) as string | null)?.toString() ?? null,
+      classification: (pick(r, ['clasificacion', 'classification', 'estado']) as string | null) ?? null,
     });
   });
   return { rows, errors };

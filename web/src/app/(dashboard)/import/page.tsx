@@ -63,6 +63,8 @@ export default function ImportPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const [week, setWeek] = useState(isoWeek());
+  // Fecha de la foto de stock (por defecto hoy). Marca a qué día es la carga.
+  const [stockDate, setStockDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -125,9 +127,10 @@ export default function ImportPage() {
           setStatus(`Nada para importar.${unmappedMsg(unmapped)}`);
           return;
         }
-        const r = await importStockSnapshot(resolved);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(stockDate)) throw new Error('Elegí la fecha de la foto de stock.');
+        const r = await importStockSnapshot(resolved, stockDate);
         setStatus(
-          `Stock vigente: ${r.ok} variantes (reemplazó la foto anterior de cada tienda). ` +
+          `Stock al ${stockDate}: ${r.ok} variantes guardadas (foto por fecha + stock vigente). ` +
             `${errors.length} con error de formato.${unmappedMsg(unmapped)}`,
         );
       } else {
@@ -184,6 +187,13 @@ export default function ImportPage() {
               <input value={week} onChange={(e) => setWeek(e.target.value)} />
             </label>
           )}
+          {kind === 'stock_snapshot' && (
+            <label>
+              Fecha de la foto <span className="muted">(a qué día es el stock)</span>
+              <br />
+              <input type="date" value={stockDate} onChange={(e) => setStockDate(e.target.value)} />
+            </label>
+          )}
         </div>
         {multiStore && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
@@ -195,15 +205,17 @@ export default function ImportPage() {
         )}
         {kind === 'sales_daily' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            La fecha sale del archivo (MES_AÑO + DIA). Cruza por <b>CODIGO_VARIANTE</b>. Si el día ya
-            estaba cargado para esa tienda, te avisa antes de reemplazarlo.
+            La fecha sale del archivo (columna <b>FECHA</b> tipo DD/MM/AAAA, o MES_AÑO + DIA). Cruza por{' '}
+            <b>CODIGO_VARIANTE</b>; usa Cant Act / Venta Act / MG Act. Si el día ya estaba cargado para
+            esa tienda, te avisa antes de reemplazarlo.
           </p>
         )}
         {kind === 'stock_snapshot' && (
           <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            Es la <b>foto vigente</b> de stock: <b>reemplaza</b> todo el stock anterior de cada tienda.
-            Cruza por <b>CODIGO_VARIANTE</b> (Stk Fin Act / Stk Val Act / Costo Prom). Actualiza el
-            almacén deducido de la semana vigente y el <b>catálogo de productos</b>.
+            Es la foto de stock a la <b>fecha</b> que elijas. Se guarda por fecha (para conservar el
+            cierre de mes) y actualiza el <b>stock vigente</b> de cada tienda. Cruza por{' '}
+            <b>CODIGO_VARIANTE</b> (Stk Fin Act / Stk Val Act / Costo Prom). Actualiza el almacén
+            deducido de esa semana y el <b>catálogo de productos</b>.
           </p>
         )}
 
