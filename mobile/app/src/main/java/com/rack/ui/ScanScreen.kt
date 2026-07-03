@@ -15,6 +15,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -52,11 +53,24 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            "Rack One · ${AppMode.label}",
-            style = MaterialTheme.typography.labelMedium,
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra superior con el color del modo (azul = Reposición, verde = Inventario).
+        Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Text(
+                    "Rack One",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Text(
+                    AppMode.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+
+      Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -131,5 +145,6 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
             OutlinedButton(onClick = { vm.reset() }) { Text("Limpiar") }
             OutlinedButton(onClick = onLogout) { Text("Salir") }
         }
+      }
     }
 }
