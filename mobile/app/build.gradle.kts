@@ -13,7 +13,10 @@ android {
         applicationId = "com.geeksapp.rackone"
         minSdk = 24          // cubre equipos Honeywell con Android 7+
         targetSdk = 35       // requisito de Google Play (API 35+)
-        versionCode = 2
+        // Google Play "quema" cada versionCode al subirlo (no se puede reusar).
+        // En CI se pasa VERSION_CODE = número de corrida (siempre incremental);
+        // localmente cae al default.
+        versionCode = (project.findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 3
         versionName = "0.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

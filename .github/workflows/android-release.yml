@@ -54,6 +54,9 @@ jobs:
       # línea de comando del shell (comillas/caracteres especiales rompían el build).
       - name: Build signed release AABs (Inventario + Repo)
         env:
+          # versionCode único y creciente por corrida (Play no permite reusar).
+          # +100 para quedar por encima de los códigos ya subidos manualmente.
+          ORG_GRADLE_PROJECT_VERSION_CODE: ${{ github.run_number + 100 }}
           ORG_GRADLE_PROJECT_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xeuezawuivushqrkzjqq.supabase.co' }}
           ORG_GRADLE_PROJECT_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_hluqQhuiQ4JMTNNAu8kctQ_0TbjPtzL' }}
           ORG_GRADLE_PROJECT_RACK_UPLOAD_STORE_FILE: ${{ github.workspace }}/mobile/rack-one-upload.keystore
