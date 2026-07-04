@@ -208,6 +208,7 @@ export interface StockSnapshotRow {
   classification: string | null;
   mundo: string | null;     // MUNDO_LK
   embarque: string | null;  // EXTRA1_LK (ej. "SIN EMBARQUE")
+  resp: string | null;      // Resp. Lk (responsable, ej. "CARLA")
 }
 
 // Stock vigente del POS por variante (Stk Fin Act / Stk Val Act / Costo Prom).
@@ -238,6 +239,7 @@ export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshot
       classification: (pick(r, ['clasificacion', 'classification', 'estado']) as string | null) ?? null,
       mundo: (pick(r, ['mundo_lk', 'mundo']) as string | null) ?? null,
       embarque: (pick(r, ['extra1_lk', 'embarque']) as string | null) ?? null,
+      resp: (pick(r, ['resp lk', 'resp_lk', 'responsable', 'resp']) as string | null) ?? null,
     });
   });
   return { rows, errors };

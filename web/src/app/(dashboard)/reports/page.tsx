@@ -76,7 +76,7 @@ export default function ReportsPage() {
     load();
   }, [load]);
 
-  const fmt = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
 
   return (
     <div>
