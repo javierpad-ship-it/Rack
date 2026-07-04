@@ -73,14 +73,12 @@ class SyncWorker(
         }
     }
 
+    // La app solo RECOGE datos: no baja el catálogo de productos (107k variantes
+    // hacían lento el sync y no aportan al escaneo). Solo se cachean los muebles
+    // de la tienda, necesarios para reconocer el código del mueble offline.
     private suspend fun pullCatalog(token: String) {
         val dao = db.dao()
         val storeId = session.storeId ?: return
-        val products = api.fetchProducts(token).map {
-            com.rack.data.ProductEntity(it.sku, it.ean, it.name, it.family)
-        }
-        if (products.isNotEmpty()) dao.upsertProducts(products)
-
         val fixtures = api.fetchFixtures(token, storeId).map {
             com.rack.data.FixtureEntity(it.id, it.storeId, it.barcode, it.name, it.active)
         }

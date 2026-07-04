@@ -159,8 +159,10 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(line.name)
-                        Text(line.sku, style = MaterialTheme.typography.bodySmall)
+                        Text(line.sku)
+                        if (line.name != line.sku) {
+                            Text(line.name, style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                     OutlinedButton(onClick = { vm.setQuantity(line.sku, line.quantity - 1) }) { Text("-") }
                     Text("  ${line.quantity}  ", style = MaterialTheme.typography.titleMedium)

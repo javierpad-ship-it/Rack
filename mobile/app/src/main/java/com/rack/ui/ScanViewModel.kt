@@ -98,8 +98,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     fun continueAdding() {
         viewModelScope.launch {
             pendingPrior.forEach { line ->
-                val product = db.dao().findProduct(line.sku)
-                names[line.sku] = product?.name ?: "(desconocido)"
+                names[line.sku] = line.sku
                 counts[line.sku] = (counts[line.sku] ?: 0) + line.quantity
             }
             pendingPrior = emptyList()
@@ -118,12 +117,13 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun addProduct(code: String) {
-        // El código puede ser SKU o EAN; resolvemos contra el catálogo cacheado.
-        val product = db.dao().findProduct(code)
-        val sku = product?.sku ?: code
-        names[sku] = product?.name ?: "(desconocido)"
+        // Solo se recoge el dato: el código escaneado ES el SKU/variante.
+        // Los nombres se resuelven en la web; sin catálogo local el escaneo
+        // es inmediato y el sync liviano.
+        val sku = code
+        names[sku] = sku
         counts[sku] = (counts[sku] ?: 0) + 1
-        emitLines("Sumado: ${names[sku]} (x${counts[sku]})")
+        emitLines("Sumado: $sku (x${counts[sku]})")
     }
 
     fun setQuantity(sku: String, qty: Int) {
