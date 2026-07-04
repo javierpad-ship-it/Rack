@@ -19,16 +19,28 @@ const GROUPS: { value: string; label: string }[] = [
 type Filters = { resp: string[]; gender: string[]; mundo: string[]; embarque: string[]; brand: string[]; linea: string[] };
 type GroupRow = { grp: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
 type StoreRow = { store: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
-type HmCell = { grp: string; band?: string; talla?: string; irp: number; cant: number };
+type HmCell = { grp: string; band?: string; talla?: string; irp: number; cant: number; stk?: number };
 type Report = {
   snap: string | null; complete: boolean; days_total: number; days_elapsed: number; group_by: string;
   kpis: { cant: number; val: number; stk: number; stk_val: number; irp: number; proy_cant: number; irp_proy: number };
   rows: GroupRow[]; price_hm: HmCell[]; talla_hm: HmCell[];
 };
 
-function irpColor(irp: number): string {
-  const t = Math.max(0, Math.min(1, irp / IRP_META));
-  return `hsl(${Math.round(t * 125)}, 70%, 45%)`;
+// Semáforo de IRP: >=30 verde (claro; más alto = más fuerte), 20-30 naranja
+// claro, <20 rojo. Fondo + color de texto con contraste.
+function irpCell(irp: number): { bg: string; fg: string } {
+  if (irp >= 40) return { bg: '#2E9E44', fg: '#fff' };
+  if (irp >= 30) return { bg: '#8FD694', fg: '#14421c' };
+  if (irp >= 20) return { bg: '#FFCC80', fg: '#5a3600' };
+  if (irp >= 10) return { bg: '#EF5350', fg: '#fff' };
+  return { bg: '#B71C1C', fg: '#fff' };
+}
+
+// Color de texto (sobre fondo blanco) para tablas y KPIs.
+function irpText(irp: number): string {
+  if (irp >= 30) return '#2E7D32';
+  if (irp >= 20) return '#B26A00';
+  return '#C62828';
 }
 const fmt = (n: number) => Math.round(Number(n) || 0).toLocaleString('es-PE');
 
@@ -125,9 +137,14 @@ export default function RotationPage() {
     return m;
   }, [report]);
   const tallas = useMemo(() => {
-    const s = new Set<string>();
-    for (const c of report?.talla_hm ?? []) s.add(c.talla ?? '');
-    return [...s].sort();
+    // Ordena por volumen (ventas + stock) y limita a 20 columnas para que el
+    // mapa sea legible (había ~40 tallas en orden alfabético).
+    const vol = new Map<string, number>();
+    for (const c of report?.talla_hm ?? []) {
+      const t = c.talla ?? '';
+      vol.set(t, (vol.get(t) ?? 0) + (Number(c.cant) || 0) + (Number(c.stk) || 0));
+    }
+    return [...vol.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([t]) => t);
   }, [report]);
   const tallaMap = useMemo(() => {
     const m = new Map<string, HmCell>();
@@ -180,8 +197,8 @@ export default function RotationPage() {
           </div>
 
           <div className="row" style={{ gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-            <Kpi label="IRP global" value={`${k.irp}%`} color={irpColor(k.irp)} />
-            {!report?.complete && <Kpi label="IRP proyectado" value={`${k.irp_proy}%`} color={irpColor(k.irp_proy)} />}
+            <Kpi label="IRP global" value={`${k.irp}%`} color={irpText(k.irp)} />
+            {!report?.complete && <Kpi label="IRP proyectado" value={`${k.irp_proy}%`} color={irpText(k.irp_proy)} />}
             <Kpi label="Monto total ventas" value={`S/ ${fmt(k.val)}`} />
             <Kpi label="Unidades vendidas" value={fmt(k.cant)} />
             <Kpi label="Stock final (und)" value={fmt(k.stk)} />
@@ -205,8 +222,8 @@ export default function RotationPage() {
               {(report?.rows ?? []).map((r) => (
                 <tr key={r.grp}>
                   <td>{r.grp}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
-                  <td><span style={{ color: irpColor(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
-                  {!report?.complete && <td><span style={{ color: irpColor(r.irp_proy) }}>{r.irp_proy}%</span></td>}
+                  <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
+                  {!report?.complete && <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
               ))}
               {(report?.rows ?? []).length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
@@ -229,8 +246,8 @@ export default function RotationPage() {
               {storeRows.map((r) => (
                 <tr key={r.store}>
                   <td>{r.store}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
-                  <td><span style={{ color: irpColor(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
-                  <td><span style={{ color: irpColor(r.irp_proy) }}>{r.irp_proy}%</span></td>
+                  <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
+                  <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>
                 </tr>
               ))}
               {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
@@ -265,7 +282,7 @@ function Kpi({ label, value, color }: { label: string; value: string; color?: st
 
 function Heatmap({ title, rows, cols, cell }: {
   title: string; rows: string[]; cols: string[];
-  cell: (row: string, col: string) => { irp: number; cant: number } | undefined;
+  cell: (row: string, col: string) => HmCell | undefined;
 }) {
   if (rows.length === 0 || cols.length === 0) return null;
   return (
@@ -282,9 +299,15 @@ function Heatmap({ title, rows, cols, cell }: {
                 <td style={{ fontWeight: 600 }}>{r}</td>
                 {cols.map((c) => {
                   const v = cell(r, c);
+                  const cc = v ? irpCell(v.irp) : null;
                   return (
-                    <td key={c} title={v ? `IRP ${v.irp}% · ${fmt(v.cant)} und` : 'sin datos'}
-                      style={{ textAlign: 'center', padding: '6px 4px', fontSize: 12, background: v ? irpColor(v.irp) : 'transparent', color: v ? '#fff' : '#9aa7c2' }}>
+                    <td key={c}
+                      title={v ? `IRP ${v.irp}% · vendidas ${fmt(v.cant)} · stock ${fmt(v.stk ?? 0)}` : 'sin datos'}
+                      style={{
+                        textAlign: 'center', padding: '6px 4px', fontSize: 12,
+                        background: cc ? cc.bg : 'transparent',
+                        color: cc ? cc.fg : '#9aa7c2',
+                      }}>
                       {v ? `${v.irp}` : '·'}
                     </td>
                   );
@@ -294,7 +317,10 @@ function Heatmap({ title, rows, cols, cell }: {
           </tbody>
         </table>
       </div>
-      <p className="muted" style={{ fontSize: 11 }}>Número = IRP %. Color: rojo (bajo) → verde (≥ meta).</p>
+      <p className="muted" style={{ fontSize: 11 }}>
+        Número = IRP %. Verde ≥ 30 · Naranja 20–30 · Rojo &lt; 20. Incluye todo el stock
+        (lo no vendido entra por su valor unitario de stock).
+      </p>
     </div>
   );
 }
