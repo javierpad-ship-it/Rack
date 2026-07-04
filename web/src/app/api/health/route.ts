@@ -22,10 +22,11 @@ export function GET() {
         looksLikeKey: anonKey.startsWith('sb_publishable_') || anonKey.startsWith('eyJ'),
         preview: anonKey ? `${anonKey.slice(0, 10)}…(${anonKey.length})` : null,
       },
+      // De la service key solo se dice si está presente y con formato válido:
+      // nada de preview/longitud en un endpoint público.
       SUPABASE_SERVICE_ROLE_KEY: {
         present: Boolean(serviceKey),
         looksLikeKey: serviceKey.startsWith('sb_secret_') || serviceKey.startsWith('eyJ'),
-        preview: serviceKey ? `${serviceKey.slice(0, 10)}…(${serviceKey.length})` : null,
       },
     },
   });

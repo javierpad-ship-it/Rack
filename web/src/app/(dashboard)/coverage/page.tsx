@@ -22,6 +22,14 @@ export default function CoveragePage() {
   const [rows, setRows] = useState<CoverageRow[]>([]);
 
   useEffect(() => {
+    // La semana comercial la define el servidor (week_calendar): usarla como
+    // default para no divergir si el admin ancló la Semana 1 a mano.
+    supabase.rpc('current_comm_week').then(({ data }) => {
+      if (typeof data === 'string' && data) setWeek(data);
+    });
+  }, [supabase]);
+
+  useEffect(() => {
     supabase
       .from('stores')
       .select('*')
@@ -86,7 +94,7 @@ export default function CoveragePage() {
                 {r.scanned ? '✓ Escaneado' : 'Pendiente'}
               </td>
               <td className="muted">
-                {r.scanned_at ? new Date(r.scanned_at).toLocaleString('es-AR') : '—'}
+                {r.scanned_at ? new Date(r.scanned_at).toLocaleString('es-PE') : '—'}
               </td>
               <td>{r.skus_count}</td>
               <td>{r.units_count}</td>

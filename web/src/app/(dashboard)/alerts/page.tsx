@@ -32,6 +32,14 @@ export default function AlertsPage() {
   const [rows, setRows] = useState<AlertRow[]>([]);
 
   useEffect(() => {
+    // La semana comercial la define el servidor (week_calendar): usarla como
+    // default para no divergir si el admin ancló la Semana 1 a mano.
+    supabase.rpc('current_comm_week').then(({ data }) => {
+      if (typeof data === 'string' && data) setWeek(data);
+    });
+  }, [supabase]);
+
+  useEffect(() => {
     supabase
       .from('stores')
       .select('*')

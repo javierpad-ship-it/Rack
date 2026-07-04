@@ -10,6 +10,12 @@ class SessionStore(context: Context) {
         get() = prefs.getString("token", null)
         set(v) = prefs.edit().putString("token", v).apply()
 
+    // Necesario para renovar el access token cuando caduca (~1 h): sin esto el
+    // sync quedaba muerto en silencio hasta un nuevo login manual.
+    var refreshToken: String?
+        get() = prefs.getString("refresh_token", null)
+        set(v) = prefs.edit().putString("refresh_token", v).apply()
+
     var userId: String?
         get() = prefs.getString("uid", null)
         set(v) = prefs.edit().putString("uid", v).apply()

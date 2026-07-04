@@ -38,14 +38,30 @@ class SupabaseClient(
         }
     }
 
-    // ---- PostgREST helpers ----
-    private fun get(token: String, pathAndQuery: String): String {
+    // ---- Auth: renovar el access token con el refresh token ----
+    fun refreshSession(refreshToken: String): AuthResponse {
+        val body = """{"refresh_token":"$refreshToken"}""".toRequestBody(jsonMedia)
         val req = Request.Builder()
+            .url("$baseUrl/auth/v1/token?grant_type=refresh_token")
+            .header("apikey", anonKey)
+            .post(body)
+            .build()
+        http.newCall(req).execute().use { resp ->
+            val text = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) error("Refresh falló (${resp.code}): $text")
+            return json.decodeFromString(AuthResponse.serializer(), text)
+        }
+    }
+
+    // ---- PostgREST helpers ----
+    private fun get(token: String, pathAndQuery: String, range: IntRange? = null): String {
+        val builder = Request.Builder()
             .url("$baseUrl/rest/v1/$pathAndQuery")
             .header("apikey", anonKey)
             .header("Authorization", "Bearer $token")
             .get()
-            .build()
+        if (range != null) builder.header("Range", "${range.first}-${range.last}")
+        val req = builder.build()
         http.newCall(req).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) error("GET $pathAndQuery falló (${resp.code}): $text")
@@ -74,9 +90,27 @@ class SupabaseClient(
         return json.decodeFromString(ProfileDto.serializer().list(), text).firstOrNull()
     }
 
+    /**
+     * Baja el catálogo completo paginando (PostgREST corta en ~1000 filas por
+     * defecto; sin esto el catálogo local quedaba truncado y los SKUs salían
+     * como "(desconocido)" al escanear).
+     */
     fun fetchProducts(token: String): List<ProductDto> {
-        val text = get(token, "products?select=sku,ean,name,family")
-        return json.decodeFromString(ProductDto.serializer().list(), text)
+        val pageSize = 1000
+        val all = mutableListOf<ProductDto>()
+        var from = 0
+        while (true) {
+            val text = get(
+                token,
+                "products?select=sku,ean,name,family&order=sku",
+                from until (from + pageSize),
+            )
+            val page = json.decodeFromString(ProductDto.serializer().list(), text)
+            all += page
+            if (page.size < pageSize) break
+            from += pageSize
+        }
+        return all
     }
 
     fun fetchFixtures(token: String, storeId: String): List<FixtureDto> {

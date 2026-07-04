@@ -49,7 +49,7 @@ export default function MonthlyPage() {
     load();
   }, [load]);
 
-  const fmt = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
 
   return (
     <div>
@@ -90,10 +90,10 @@ export default function MonthlyPage() {
             <tr key={r.fixture_id}>
               <td>{r.fixture_name}</td>
               <td>
-                {fmt(r.mtd_units)} u · ${fmt(r.mtd_amount)}
+                {fmt(r.mtd_units)} u · S/ {fmt(r.mtd_amount)}
               </td>
               <td style={{ fontWeight: 600 }}>
-                {fmt(r.projected_units)} u · ${fmt(r.projected_amount)}
+                {fmt(r.projected_units)} u · S/ {fmt(r.projected_amount)}
               </td>
               <td>{fmt(r.exposed_units)} u</td>
               <td>{fmt(r.total_stock)} u</td>

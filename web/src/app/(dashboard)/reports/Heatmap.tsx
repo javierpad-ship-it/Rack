@@ -42,7 +42,7 @@ export default function Heatmap({
           return (
             <span
               key={f.id}
-              title={`${f.name}: $${amount.toLocaleString('es-AR')}`}
+              title={`${f.name}: S/ ${(Number(amount) || 0).toLocaleString('es-PE')}`}
               style={{
                 position: 'absolute',
                 left: `${(f.pin_x as number) * 100}%`,
@@ -61,7 +61,7 @@ export default function Heatmap({
       </div>
       <p className="muted" style={{ fontSize: 12 }}>
         Color por venta de la semana (azul = menor, rojo = mayor). Máximo: $
-        {max.toLocaleString('es-AR')}.
+        {(Number(max) || 0).toLocaleString('es-PE')}.
       </p>
     </div>
   );

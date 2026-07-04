@@ -96,6 +96,7 @@ export default function RotationPage() {
         talla_hm: Array.isArray(d.talla_hm) ? d.talla_hm : [],
       });
     }
+    if (sto.error && !rep.error) setError(sto.error.message);
     setStoreRows(Array.isArray(sto.data) ? (sto.data as StoreRow[]) : []);
     setLoading(false);
   }, [supabase, year, month, groupBy, storeId, gender, mundo, embarque, brand, linea, resp]);

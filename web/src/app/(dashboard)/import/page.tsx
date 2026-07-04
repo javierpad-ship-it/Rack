@@ -38,7 +38,10 @@ async function resolveRows<T extends { store_label: string | null }>(
   const unmappedCounts = new Map<string, number>();
   const resolved: (T & { storeId: string })[] = [];
   for (const r of rows) {
-    if (!r.store_label) continue; // sin TIENDA no se puede repartir
+    if (!r.store_label) {
+      unmappedCounts.set('(sin TIENDA)', (unmappedCounts.get('(sin TIENDA)') ?? 0) + 1);
+      continue;
+    }
     const sid = map.data[r.store_label];
     if (sid) {
       resolved.push({ ...r, storeId: sid });
@@ -123,11 +126,11 @@ export default function ImportPage() {
       .then(({ data }) => setStores((data ?? []) as Store[]));
   }, [supabase]);
 
-  // Al abrir Ventas (y tras cargar), consulta hasta qué día hay ventas.
+  // Al abrir Ventas (y al terminar una carga), consulta hasta qué día hay ventas.
   useEffect(() => {
-    if (kind !== 'sales_daily') return;
+    if (kind !== 'sales_daily' || busy) return;
     lastSalesDate().then(setLastSales).catch(() => setLastSales(null));
-  }, [kind, status]);
+  }, [kind, busy]);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id;
 
@@ -135,7 +138,7 @@ export default function ImportPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
-    setStatus('Procesando archivo…');
+    setStatus('Procesando archivo… No cierres esta pestaña hasta que termine.');
     try {
       const buf = await file.arrayBuffer();
       if (kind === 'sales_daily') {

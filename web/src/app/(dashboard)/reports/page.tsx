@@ -39,6 +39,14 @@ export default function ReportsPage() {
   const [tab, setTab] = useState<'tabla' | 'heatmap' | 'almacen' | 'sinmueble'>('tabla');
 
   useEffect(() => {
+    // La semana comercial la define el servidor (week_calendar): usarla como
+    // default para no divergir si el admin ancló la Semana 1 a mano.
+    supabase.rpc('current_comm_week').then(({ data }) => {
+      if (typeof data === 'string' && data) setWeek(data);
+    });
+  }, [supabase]);
+
+  useEffect(() => {
     supabase
       .from('stores')
       .select('*')
@@ -76,7 +84,7 @@ export default function ReportsPage() {
     load();
   }, [load]);
 
-  const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
 
   return (
     <div>
@@ -140,7 +148,7 @@ export default function ReportsPage() {
                 <td title={`Escaneado: ${fmt(r.exposed_now)} · Vendido: ${fmt(r.units_now)}`}>
                   {fmt(r.remaining_now)} u
                 </td>
-                <td>${fmt(r.amount_now)}</td>
+                <td>S/ {fmt(r.amount_now)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -179,7 +187,7 @@ export default function ReportsPage() {
                   <td>{u.sku}</td>
                   <td>{u.name}</td>
                   <td>{fmt(u.units)}</td>
-                  <td>${fmt(u.amount)}</td>
+                  <td>S/ {fmt(u.amount)}</td>
                 </tr>
               ))}
               {unattributed.length === 0 && (

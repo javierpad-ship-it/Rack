@@ -25,10 +25,26 @@ class SyncWorker(
     private val api = SupabaseClient()
 
     override suspend fun doWork(): Result {
-        val token = session.accessToken ?: return Result.success() // sin sesión, nada que hacer
+        var token = session.accessToken ?: return Result.success() // sin sesión, nada que hacer
         return try {
-            pushPending(token)
-            pullCatalog(token)
+            try {
+                pushPending(token)
+                pullCatalog(token)
+            } catch (e: Exception) {
+                // El access token de Supabase caduca (~1 h): ante un 401,
+                // renovamos con el refresh token y reintentamos una vez.
+                if (e.message?.contains("401") == true) {
+                    val refresh = session.refreshToken ?: throw e
+                    val renewed = api.refreshSession(refresh)
+                    session.accessToken = renewed.accessToken
+                    session.refreshToken = renewed.refreshToken
+                    token = renewed.accessToken
+                    pushPending(token)
+                    pullCatalog(token)
+                } else {
+                    throw e
+                }
+            }
             Result.success()
         } catch (e: Exception) {
             Result.retry()

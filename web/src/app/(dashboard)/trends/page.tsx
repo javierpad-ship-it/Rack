@@ -51,7 +51,7 @@ export default function TrendsPage() {
     byFixture.get(r.fixture_id)!.cells.set(r.week, r.amount_sold);
   });
   const max = Math.max(1, ...rows.map((r) => r.amount_sold));
-  const fmt = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
 
   return (
     <div>
@@ -89,7 +89,7 @@ export default function TrendsPage() {
                 return (
                   <td
                     key={w}
-                    title={`$${fmt(v)}`}
+                    title={`S/ ${fmt(v)}`}
                     style={{ background: `rgba(79,140,255,${t.toFixed(2)})` }}
                   >
                     {fmt(v)}

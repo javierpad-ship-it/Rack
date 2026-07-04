@@ -64,6 +64,7 @@ fun LoginScreen(session: SessionStore, onLoggedIn: () -> Unit) {
                     try {
                         val resp = withContext(Dispatchers.IO) { api.signIn(email.trim(), password) }
                         session.accessToken = resp.accessToken
+                        session.refreshToken = resp.refreshToken
                         session.userId = resp.user.id
                         val profile = withContext(Dispatchers.IO) {
                             api.fetchProfile(resp.accessToken, resp.user.id)

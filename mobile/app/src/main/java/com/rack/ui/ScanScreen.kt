@@ -113,7 +113,8 @@ fun ScanScreen(vm: ScanViewModel, onLogout: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Pend.: ${state.pendingCount}")
+                // Del Flow reactivo: se actualiza solo cuando el sync marca synced.
+                Text("Pend.: ${pending.size}")
                 OutlinedButton(
                     onClick = { vm.syncNow() },
                     modifier = Modifier.padding(start = 8.dp),
