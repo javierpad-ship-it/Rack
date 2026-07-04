@@ -1,6 +1,8 @@
 package com.rack.ui
 
 import android.app.Application
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rack.AppMode
@@ -55,6 +57,26 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     // Líneas del conteo anterior de esta semana, en espera de Sumar/Reiniciar.
     private var pendingPrior: List<ScanLineEntity> = emptyList()
 
+    // Feedback sonoro del escaneo (beep = ok, tono grave = error).
+    private val tone: ToneGenerator? = try {
+        ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+    } catch (e: Exception) {
+        null
+    }
+
+    private fun beepOk() {
+        try { tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 120) } catch (_: Exception) {}
+    }
+
+    private fun beepError() {
+        try { tone?.startTone(ToneGenerator.TONE_SUP_ERROR, 250) } catch (_: Exception) {}
+    }
+
+    override fun onCleared() {
+        try { tone?.release() } catch (_: Exception) {}
+        super.onCleared()
+    }
+
     init {
         refreshPending()
     }
@@ -69,12 +91,14 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             if (_state.value.fixture == null) {
                 val fixture = db.dao().findFixtureByBarcode(code)
                 if (fixture == null) {
+                    beepError()
                     setMessage("Mueble no reconocido: $code")
                 } else if (AppMode.isAudit) {
                     // Inventario: ¿ya hay un conteo de este mueble esta semana en este equipo?
                     val prior = db.dao().lastSessionFor(fixture.id, IsoWeek.of())
                     val priorLines = if (prior != null) db.dao().linesForSession(prior.clientUid) else emptyList()
                     if (priorLines.isNotEmpty()) {
+                        beepOk()
                         pendingPrior = priorLines
                         _state.value = _state.value.copy(
                             fixture = fixture,
@@ -82,10 +106,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
                             message = "Este mueble ya fue escaneado esta semana.",
                         )
                     } else {
+                        beepOk()
                         _state.value = _state.value.copy(fixture = fixture, message = "Mueble: ${fixture.name}")
                     }
                 } else {
                     // Repo: siempre suma, nunca pregunta.
+                    beepOk()
                     _state.value = _state.value.copy(fixture = fixture, message = "Reponiendo: ${fixture.name}")
                 }
             } else {
@@ -123,6 +149,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         val sku = code
         names[sku] = sku
         counts[sku] = (counts[sku] ?: 0) + 1
+        beepOk()
         emitLines("Sumado: $sku (x${counts[sku]})")
     }
 
@@ -158,7 +185,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             db.dao().saveScan(sessionEntity, lines)
             SyncScheduler.syncNow(getApplication())
             reset()
-            setMessage("Sesión guardada. Sincronizando…")
+            setMessage("✓ Guardado. Se enviará automáticamente al haber señal.")
             refreshPending()
         }
     }
