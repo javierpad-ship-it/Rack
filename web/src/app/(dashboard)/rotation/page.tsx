@@ -68,20 +68,25 @@ export default function RotationPage() {
     });
   }, [supabase]);
 
-  const load = useCallback(async () => {
+  // Rango y filtros comunes del período elegido.
+  const period = useMemo(() => {
+    const mm = String(month).padStart(2, '0');
+    return {
+      p_from: `${year}-${mm}-01`,
+      p_to: `${year}-${mm}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`,
+      p_gender: gender || null, p_mundo: mundo || null, p_embarque: embarque || null,
+      p_brand: brand || null, p_linea: linea || null, p_resp: resp || null,
+    };
+  }, [year, month, gender, mundo, embarque, brand, linea, resp]);
+
+  // Carga perezosa por pestaña: solo se consulta lo que está visible, así el
+  // servidor no corre las dos consultas pesadas en cada cambio de filtro.
+  const loadResumen = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const mm = String(month).padStart(2, '0');
-    const from = `${year}-${mm}-01`;
-    const to = `${year}-${mm}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
-    const flt = {
-      p_from: from, p_to: to, p_gender: gender || null, p_mundo: mundo || null,
-      p_embarque: embarque || null, p_brand: brand || null, p_linea: linea || null, p_resp: resp || null,
-    };
-    const [rep, sto] = await Promise.all([
-      supabase.rpc('rotation_report', { ...flt, p_group_by: groupBy, p_store: storeId || null }),
-      supabase.rpc('rotation_stores', flt),
-    ]);
+    const rep = await supabase.rpc('rotation_report', {
+      ...period, p_group_by: groupBy, p_store: storeId || null,
+    });
     if (rep.error) {
       setError(rep.error.message);
       setReport(null);
@@ -96,12 +101,22 @@ export default function RotationPage() {
         talla_hm: Array.isArray(d.talla_hm) ? d.talla_hm : [],
       });
     }
-    if (sto.error && !rep.error) setError(sto.error.message);
+    setLoading(false);
+  }, [supabase, period, groupBy, storeId]);
+
+  const loadStores = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const sto = await supabase.rpc('rotation_stores', period);
+    if (sto.error) setError(sto.error.message);
     setStoreRows(Array.isArray(sto.data) ? (sto.data as StoreRow[]) : []);
     setLoading(false);
-  }, [supabase, year, month, groupBy, storeId, gender, mundo, embarque, brand, linea, resp]);
+  }, [supabase, period]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (tab === 'resumen') loadResumen();
+    else loadStores();
+  }, [tab, loadResumen, loadStores]);
 
   const groups = useMemo(() => (report?.rows ?? []).map((r) => r.grp), [report]);
   const priceMap = useMemo(() => {
