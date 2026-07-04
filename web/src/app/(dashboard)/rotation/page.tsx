@@ -6,9 +6,8 @@ import type { Store } from '@/lib/types';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const PRICE_BANDS = ['<9', '9-10', '10-20', '20-30', '30-40', '40-50', '50-70', '70+'];
-const IRP_META = 30; // meta de IRP (%) para la escala de color
+const IRP_META = 30;
 
-// Dimensiones por las que se puede agrupar el dashboard.
 const GROUPS: { value: string; label: string }[] = [
   { value: 'resp', label: 'Responsable' },
   { value: 'linea', label: 'Línea' },
@@ -19,17 +18,12 @@ const GROUPS: { value: string; label: string }[] = [
 
 type Filters = { resp: string[]; gender: string[]; mundo: string[]; embarque: string[]; brand: string[]; linea: string[] };
 type GroupRow = { grp: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
+type StoreRow = { store: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
 type HmCell = { grp: string; band?: string; talla?: string; irp: number; cant: number };
 type Report = {
-  snap: string | null;
-  complete: boolean;
-  days_total: number;
-  days_elapsed: number;
-  group_by: string;
+  snap: string | null; complete: boolean; days_total: number; days_elapsed: number; group_by: string;
   kpis: { cant: number; val: number; stk: number; stk_val: number; irp: number; proy_cant: number; irp_proy: number };
-  rows: GroupRow[];
-  price_hm: HmCell[];
-  talla_hm: HmCell[];
+  rows: GroupRow[]; price_hm: HmCell[]; talla_hm: HmCell[];
 };
 
 function irpColor(irp: number): string {
@@ -57,7 +51,9 @@ export default function RotationPage() {
   const [brand, setBrand] = useState('');
   const [linea, setLinea] = useState('');
 
+  const [tab, setTab] = useState<'resumen' | 'stores'>('resumen');
   const [report, setReport] = useState<Report | null>(null);
+  const [storeRows, setStoreRows] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,16 +74,19 @@ export default function RotationPage() {
     const mm = String(month).padStart(2, '0');
     const from = `${year}-${mm}-01`;
     const to = `${year}-${mm}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
-    const { data, error } = await supabase.rpc('rotation_report', {
-      p_from: from, p_to: to, p_group_by: groupBy,
-      p_store: storeId || null, p_gender: gender || null, p_mundo: mundo || null,
+    const flt = {
+      p_from: from, p_to: to, p_gender: gender || null, p_mundo: mundo || null,
       p_embarque: embarque || null, p_brand: brand || null, p_linea: linea || null, p_resp: resp || null,
-    });
-    if (error) {
-      setError(error.message);
+    };
+    const [rep, sto] = await Promise.all([
+      supabase.rpc('rotation_report', { ...flt, p_group_by: groupBy, p_store: storeId || null }),
+      supabase.rpc('rotation_stores', flt),
+    ]);
+    if (rep.error) {
+      setError(rep.error.message);
       setReport(null);
     } else {
-      const d = (data ?? {}) as Partial<Report>;
+      const d = (rep.data ?? {}) as Partial<Report>;
       setReport({
         snap: d.snap ?? null, complete: d.complete ?? true,
         days_total: d.days_total ?? 0, days_elapsed: d.days_elapsed ?? 0, group_by: d.group_by ?? groupBy,
@@ -97,6 +96,7 @@ export default function RotationPage() {
         talla_hm: Array.isArray(d.talla_hm) ? d.talla_hm : [],
       });
     }
+    setStoreRows(Array.isArray(sto.data) ? (sto.data as StoreRow[]) : []);
     setLoading(false);
   }, [supabase, year, month, groupBy, storeId, gender, mundo, embarque, brand, linea, resp]);
 
@@ -125,23 +125,14 @@ export default function RotationPage() {
   return (
     <div>
       <h1>Rotación (IRP)</h1>
-      <p className="muted" style={{ marginTop: 0 }}>
-        IRP = Ventas (und) / (Ventas + Stock final) × 100. Meta {IRP_META}%.
-      </p>
+      <p className="muted" style={{ marginTop: 0 }}>IRP = Ventas (und) / (Ventas + Stock final) × 100. Meta {IRP_META}%.</p>
 
       <div className="panel row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14 }}>
-        <label>Agrupar por<br /><select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
-          {GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-        </select></label>
         <label>Año<br /><select value={year} onChange={(e) => setYear(Number(e.target.value))}>
           {[defYear - 1, defYear, defYear + 1].map((y) => <option key={y} value={y}>{y}</option>)}
         </select></label>
         <label>Mes<br /><select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
           {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select></label>
-        <label>Tienda<br /><select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-          <option value="">Todas</option>
-          {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select></label>
         <FilterSelect label="Responsable" value={resp} set={setResp} options={opts.resp} />
         <FilterSelect label="Género" value={gender} set={setGender} options={opts.gender} />
@@ -151,11 +142,27 @@ export default function RotationPage() {
         <FilterSelect label="Línea" value={linea} set={setLinea} options={opts.linea} />
       </div>
 
+      {/* Pestañas */}
+      <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+        <button className={tab === 'resumen' ? '' : 'secondary'} onClick={() => setTab('resumen')}>Resumen</button>
+        <button className={tab === 'stores' ? '' : 'secondary'} onClick={() => setTab('stores')}>Por tienda</button>
+      </div>
+
       {error && <p className="neg">Error: {error}</p>}
       {loading && <p className="muted">Cargando…</p>}
 
-      {k && !loading && (
+      {!loading && tab === 'resumen' && k && (
         <>
+          <div className="row" style={{ gap: 12, flexWrap: 'wrap', marginBottom: 8, alignItems: 'flex-end' }}>
+            <label>Agrupar por<br /><select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
+              {GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+            </select></label>
+            <label>Tienda<br /><select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              <option value="">Todas</option>
+              {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select></label>
+          </div>
+
           <div className="row" style={{ gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
             <Kpi label="IRP global" value={`${k.irp}%`} color={irpColor(k.irp)} />
             {!report?.complete && <Kpi label="IRP proyectado" value={`${k.irp_proy}%`} color={irpColor(k.irp_proy)} />}
@@ -181,11 +188,7 @@ export default function RotationPage() {
             <tbody>
               {(report?.rows ?? []).map((r) => (
                 <tr key={r.grp}>
-                  <td>{r.grp}</td>
-                  <td>{fmt(r.cant)}</td>
-                  <td>{fmt(r.val)}</td>
-                  <td>{fmt(r.stk)}</td>
-                  <td>{fmt(r.stk_val)}</td>
+                  <td>{r.grp}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
                   <td><span style={{ color: irpColor(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
                   {!report?.complete && <td><span style={{ color: irpColor(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
@@ -194,10 +197,30 @@ export default function RotationPage() {
             </tbody>
           </table>
 
-          <Heatmap title={`Mapa de calor — IRP por rango de precio de venta (por ${grpLabel.toLowerCase()})`}
-            rows={groups} cols={PRICE_BANDS} cell={(g, c) => priceMap.get(`${g}|${c}`)} />
-          <Heatmap title={`Mapa de calor — IRP por talla (por ${grpLabel.toLowerCase()})`}
-            rows={groups} cols={tallas} cell={(g, c) => tallaMap.get(`${g}|${c}`)} />
+          <Heatmap title={`IRP por rango de precio de venta (por ${grpLabel.toLowerCase()})`} rows={groups} cols={PRICE_BANDS} cell={(g, c) => priceMap.get(`${g}|${c}`)} />
+          <Heatmap title={`IRP por talla (por ${grpLabel.toLowerCase()})`} rows={groups} cols={tallas} cell={(g, c) => tallaMap.get(`${g}|${c}`)} />
+        </>
+      )}
+
+      {!loading && tab === 'stores' && (
+        <>
+          <h2 style={{ marginBottom: 6 }}>Rotación por tienda</h2>
+          <table className="panel">
+            <thead>
+              <tr><th>Tienda</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th><th>Stk Val (S/)</th><th>IRP</th><th>IRP proy.</th></tr>
+            </thead>
+            <tbody>
+              {storeRows.map((r) => (
+                <tr key={r.store}>
+                  <td>{r.store}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
+                  <td><span style={{ color: irpColor(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
+                  <td><span style={{ color: irpColor(r.irp_proy) }}>{r.irp_proy}%</span></td>
+                </tr>
+              ))}
+              {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
+            </tbody>
+          </table>
+          <p className="muted" style={{ fontSize: 12 }}>Usa los filtros de arriba (género, mundo, responsable, etc.) para acotar el análisis por tienda.</p>
         </>
       )}
     </div>
@@ -225,9 +248,7 @@ function Kpi({ label, value, color }: { label: string; value: string; color?: st
 }
 
 function Heatmap({ title, rows, cols, cell }: {
-  title: string;
-  rows: string[];
-  cols: string[];
+  title: string; rows: string[]; cols: string[];
   cell: (row: string, col: string) => { irp: number; cant: number } | undefined;
 }) {
   if (rows.length === 0 || cols.length === 0) return null;
@@ -247,11 +268,7 @@ function Heatmap({ title, rows, cols, cell }: {
                   const v = cell(r, c);
                   return (
                     <td key={c} title={v ? `IRP ${v.irp}% · ${fmt(v.cant)} und` : 'sin datos'}
-                      style={{
-                        textAlign: 'center', padding: '6px 4px', fontSize: 12,
-                        background: v ? irpColor(v.irp) : 'transparent',
-                        color: v ? '#fff' : '#9aa7c2',
-                      }}>
+                      style={{ textAlign: 'center', padding: '6px 4px', fontSize: 12, background: v ? irpColor(v.irp) : 'transparent', color: v ? '#fff' : '#9aa7c2' }}>
                       {v ? `${v.irp}` : '·'}
                     </td>
                   );
@@ -261,7 +278,7 @@ function Heatmap({ title, rows, cols, cell }: {
           </tbody>
         </table>
       </div>
-      <p className="muted" style={{ fontSize: 11 }}>Número = IRP %. Color: rojo (bajo) → verde (≥ meta). Pasa el mouse para ver unidades.</p>
+      <p className="muted" style={{ fontSize: 11 }}>Número = IRP %. Color: rojo (bajo) → verde (≥ meta).</p>
     </div>
   );
 }
