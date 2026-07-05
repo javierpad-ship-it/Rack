@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
-import SignOutButton from './SignOutButton';
-import NavLinks from './NavLinks';
-import BrandLogo from '@/components/BrandLogo';
+import Sidebar from './Sidebar';
 
 type NavItem = { href: string; label: string; roles: Profile['role'][] };
 type NavSection = { label?: string; items: NavItem[] };
@@ -64,21 +62,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   })).filter((s) => s.items.length > 0);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '232px 1fr', minHeight: '100vh' }}>
-      <aside className="side">
-        <div className="brand">
-          <BrandLogo variant="sidebar" />
-          <span className="brand-by">Lukers</span>
-        </div>
-        <NavLinks sections={sections} />
-        <div className="who">
-          <div className="name">{profile?.full_name ?? user.email}</div>
-          <span className="role-badge">{role}</span>
-          <div style={{ marginTop: 12 }}>
-            <SignOutButton />
-          </div>
-        </div>
-      </aside>
+    <div className="shell">
+      <Sidebar sections={sections} name={profile?.full_name ?? user.email ?? ''} role={role} />
       <main className="content">{children}</main>
     </div>
   );

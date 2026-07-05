@@ -17,12 +17,12 @@ const GROUPS: { value: string; label: string }[] = [
 ];
 
 type Filters = { resp: string[]; gender: string[]; mundo: string[]; embarque: string[]; brand: string[]; linea: string[] };
-type GroupRow = { grp: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
-type StoreRow = { store: string; cant: number; val: number; stk: number; stk_val: number; irp: number; irp_proy: number };
+type GroupRow = { grp: string; cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; irp_proy: number; mgn: number };
+type StoreRow = { store: string; cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; irp_proy: number; mgn: number };
 type HmCell = { grp: string; band?: string; talla?: string; irp: number; cant: number; stk?: number };
 type Report = {
   snap: string | null; complete: boolean; days_total: number; days_elapsed: number; group_by: string;
-  kpis: { cant: number; val: number; stk: number; stk_val: number; irp: number; proy_cant: number; irp_proy: number };
+  kpis: { cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; mgn: number; proy_cant: number; irp_proy: number };
   rows: GroupRow[]; price_hm: HmCell[]; talla_hm: HmCell[];
 };
 
@@ -107,7 +107,7 @@ export default function RotationPage() {
       setReport({
         snap: d.snap ?? null, complete: d.complete ?? true,
         days_total: d.days_total ?? 0, days_elapsed: d.days_elapsed ?? 0, group_by: d.group_by ?? groupBy,
-        kpis: d.kpis ?? { cant: 0, val: 0, stk: 0, stk_val: 0, irp: 0, proy_cant: 0, irp_proy: 0 },
+        kpis: d.kpis ?? { cant: 0, val: 0, mg: 0, stk: 0, stk_val: 0, irp: 0, mgn: 0, proy_cant: 0, irp_proy: 0 },
         rows: Array.isArray(d.rows) ? d.rows : [],
         price_hm: Array.isArray(d.price_hm) ? d.price_hm : [],
         talla_hm: Array.isArray(d.talla_hm) ? d.talla_hm : [],
@@ -198,6 +198,7 @@ export default function RotationPage() {
 
           <div className="row" style={{ gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
             <Kpi label="IRP global" value={`${k.irp}%`} color={irpText(k.irp)} />
+            <Kpi label="Margen %" value={`${k.mgn}%`} />
             {!report?.complete && <Kpi label="IRP proyectado" value={`${k.irp_proy}%`} color={irpText(k.irp_proy)} />}
             <Kpi label="Monto total ventas" value={`S/ ${fmt(k.val)}`} />
             <Kpi label="Unidades vendidas" value={fmt(k.cant)} />
@@ -215,7 +216,7 @@ export default function RotationPage() {
             <thead>
               <tr>
                 <th>{grpLabel}</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th>
-                <th>Stk Val (S/)</th><th>IRP</th>{!report?.complete && <th>IRP proy.</th>}
+                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th>{!report?.complete && <th>IRP proy.</th>}
               </tr>
             </thead>
             <tbody>
@@ -223,6 +224,7 @@ export default function RotationPage() {
                 <tr key={r.grp}>
                   <td>{r.grp}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
                   <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
+                  <td>{r.mgn}%</td>
                   {!report?.complete && <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
               ))}
@@ -240,13 +242,14 @@ export default function RotationPage() {
           <h2 style={{ marginBottom: 6 }}>Rotación por tienda</h2>
           <table className="panel">
             <thead>
-              <tr><th>Tienda</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th><th>Stk Val (S/)</th><th>IRP</th><th>IRP proy.</th></tr>
+              <tr><th>Tienda</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th><th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th>IRP proy.</th></tr>
             </thead>
             <tbody>
               {storeRows.map((r) => (
                 <tr key={r.store}>
                   <td>{r.store}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
                   <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
+                  <td>{r.mgn}%</td>
                   <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>
                 </tr>
               ))}
