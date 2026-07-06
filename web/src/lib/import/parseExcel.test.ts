@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { parseCatalog, parseSales, parseStock } from './parseExcel';
+import { parseCatalog, parseSales, parseStock, parseSalesDaily } from './parseExcel';
+
+// CSV crudo (como lo exporta el POS) a ArrayBuffer.
+function csvBuffer(text: string): ArrayBuffer {
+  return new TextEncoder().encode(text).buffer as ArrayBuffer;
+}
 
 // Construye un ArrayBuffer de Excel a partir de una matriz (encabezados + filas).
 function xlsxBuffer(rows: (string | number)[][]): ArrayBuffer {
@@ -46,6 +51,32 @@ describe('parseSales', () => {
     ]);
     const { rows } = parseSales(buf);
     expect(rows[0]).toEqual({ sku: 'A1', units: 5, amount: 1234.5 });
+  });
+});
+
+describe('parseSalesDaily', () => {
+  // Regresión: xlsx convertía las fechas DD/MM con día <= 12 (01/06, 12/06) a
+  // serial numérico (interpretándolas como MM/DD), y esas filas se descartaban
+  // (se perdían los días 1-12 del mes). Con raw:true deben leerse todas.
+  it('lee todas las fechas DD/MM incluidas las de día <= 12', () => {
+    const buf = csvBuffer(
+      [
+        'FECHA,CODIGO_VARIANTE,TIENDA,Cant Act,Venta Act,MG Act',
+        '01/06/2026,SKU1,El Sol,5,100,50',
+        '12/06/2026,SKU2,El Sol,2,40,20',
+        '13/06/2026,SKU3,El Sol,7,140,70',
+        '30/06/2026,SKU4,El Sol,4,80,40',
+      ].join('\n'),
+    );
+    const { rows, errors } = parseSalesDaily(buf);
+    expect(errors).toHaveLength(0);
+    expect(rows.map((r) => r.sale_date)).toEqual([
+      '2026-06-01',
+      '2026-06-12',
+      '2026-06-13',
+      '2026-06-30',
+    ]);
+    expect(rows.reduce((a, r) => a + r.units, 0)).toBe(18);
   });
 });
 

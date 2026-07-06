@@ -13,18 +13,33 @@ function normHeader(h: string): string {
     .trim();
 }
 
-// Normaliza una fecha a YYYY-MM-DD. Acepta YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY
-// y objetos Date (por si XLSX ya la parseó).
+// Convierte un serial de fecha de Excel (días desde 1899-12-30) a YYYY-MM-DD.
+function excelSerialToDate(serial: number): string | null {
+  // Rango razonable (~1954 a ~2119) para no confundir con otros números.
+  if (!(serial > 20000 && serial < 80000)) return null;
+  const ms = Math.round((serial - 25569) * 86400 * 1000); // 25569 = 1970-01-01
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+// Normaliza una fecha a YYYY-MM-DD. Acepta YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY,
+// objetos Date y seriales de Excel. IMPORTANTE: el POS exporta DD/MM/AAAA; el
+// libro se lee con raw:true (readSheet) para que las fechas lleguen como TEXTO
+// y no como serial. Si aun así llega un número, se decodifica como serial de
+// Excel (fecha absoluta, sin ambigüedad DD/MM).
 function normalizeDate(v: unknown): string | null {
   if (v == null || v === '') return null;
   if (v instanceof Date && !isNaN(v.getTime())) {
     return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
   }
+  if (typeof v === 'number') return excelSerialToDate(v);
   const s = String(v).trim();
   let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); // YYYY-MM-DD
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})/); // DD/MM/YYYY o DD-MM-YYYY
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  if (/^\d+(\.\d+)?$/.test(s)) return excelSerialToDate(Number(s)); // serial como texto
   return null;
 }
 
@@ -34,9 +49,12 @@ export interface ParseResult<T> {
 }
 
 function readSheet(file: ArrayBuffer): Record<string, unknown>[] {
-  const wb = XLSX.read(file, { type: 'array' });
+  // raw:true evita que xlsx "adivine" tipos. Sin esto, las fechas DD/MM con
+  // día <= 12 (ej. 01/06/2026) se interpretan como MM/DD y se convierten a
+  // serial numérico, que luego normalizeDate descartaba (se perdían días 1-12).
+  const wb = XLSX.read(file, { type: 'array', raw: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
+  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null, raw: true });
   // Re-mapear claves a encabezados normalizados.
   return raw.map((r) => {
     const out: Record<string, unknown> = {};
