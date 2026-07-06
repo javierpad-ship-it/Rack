@@ -66,6 +66,8 @@ export default function RotationPage() {
   const [tab, setTab] = useState<'resumen' | 'stores'>('resumen');
   const [report, setReport] = useState<Report | null>(null);
   const [storeRows, setStoreRows] = useState<StoreRow[]>([]);
+  const [storePriceHm, setStorePriceHm] = useState<HmCell[]>([]);
+  const [storeTallaHm, setStoreTallaHm] = useState<HmCell[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,8 +122,17 @@ export default function RotationPage() {
     setLoading(true);
     setError(null);
     const sto = await supabase.rpc('rotation_stores', period);
-    if (sto.error) setError(sto.error.message);
-    setStoreRows(Array.isArray(sto.data) ? (sto.data as StoreRow[]) : []);
+    if (sto.error) {
+      setError(sto.error.message);
+      setStoreRows([]);
+      setStorePriceHm([]);
+      setStoreTallaHm([]);
+    } else {
+      const d = (sto.data ?? {}) as { rows?: StoreRow[]; price_hm?: HmCell[]; talla_hm?: HmCell[] };
+      setStoreRows(Array.isArray(d.rows) ? d.rows : []);
+      setStorePriceHm(Array.isArray(d.price_hm) ? d.price_hm : []);
+      setStoreTallaHm(Array.isArray(d.talla_hm) ? d.talla_hm : []);
+    }
     setLoading(false);
   }, [supabase, period]);
 
@@ -151,6 +162,28 @@ export default function RotationPage() {
     for (const c of report?.talla_hm ?? []) m.set(`${c.grp}|${c.talla}`, c);
     return m;
   }, [report]);
+
+  // Matrices por tienda (pestaña "Por tienda"): filas = tiendas, columnas =
+  // rangos de precio / tallas. Reusan el mismo componente Heatmap (grp = tienda).
+  const storeNames = useMemo(() => storeRows.map((r) => r.store), [storeRows]);
+  const storePriceMap = useMemo(() => {
+    const m = new Map<string, HmCell>();
+    for (const c of storePriceHm) m.set(`${c.grp}|${c.band}`, c);
+    return m;
+  }, [storePriceHm]);
+  const storeTallas = useMemo(() => {
+    const vol = new Map<string, number>();
+    for (const c of storeTallaHm) {
+      const t = c.talla ?? '';
+      vol.set(t, (vol.get(t) ?? 0) + (Number(c.cant) || 0) + (Number(c.stk) || 0));
+    }
+    return [...vol.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([t]) => t);
+  }, [storeTallaHm]);
+  const storeTallaMap = useMemo(() => {
+    const m = new Map<string, HmCell>();
+    for (const c of storeTallaHm) m.set(`${c.grp}|${c.talla}`, c);
+    return m;
+  }, [storeTallaHm]);
 
   const k = report?.kpis;
   const grpLabel = GROUPS.find((g) => g.value === groupBy)?.label ?? 'Grupo';
@@ -257,6 +290,9 @@ export default function RotationPage() {
             </tbody>
           </table>
           <p className="muted" style={{ fontSize: 12 }}>Usa los filtros de arriba (género, mundo, responsable, etc.) para acotar el análisis por tienda.</p>
+
+          <Heatmap title="IRP por rango de precio de venta (por tienda)" rows={storeNames} cols={PRICE_BANDS} cell={(g, c) => storePriceMap.get(`${g}|${c}`)} />
+          <Heatmap title="IRP por talla (por tienda)" rows={storeNames} cols={storeTallas} cell={(g, c) => storeTallaMap.get(`${g}|${c}`)} />
         </>
       )}
     </div>
