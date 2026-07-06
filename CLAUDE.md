@@ -20,6 +20,13 @@ Ver `README.md`, `docs/ARCHITECTURE.md` y `docs/ROADMAP.md`.
 - **Semana = ISO week** `IYYY-"W"IW` (ej. `2026-W26`). Hay tres implementaciones que DEBEN coincidir:
   `iso_week()` (SQL), `web/src/lib/week.ts`, `mobile/.../util/IsoWeek.kt`.
 - **Sync idempotente** por `client_uid` en `scan_sessions`.
+- **Piso de venta = las ubicaciones (muebles) creadas en la tienda.** Lo escaneado en esos muebles es
+  el piso. Cada tienda tiene además una ubicación especial **`almacén`** (se crea automáticamente):
+  lo que se "repone a almacén" es mercadería que **sale del piso de venta y vuelve al almacén**. El
+  almacén deducido (`store_warehouse()`) sigue siendo stock total − piso escaneado.
+- **Códigos:** `código genérico`/artículo = `article_code` (CODIGO_ARTICULO); `SKU`/variante =
+  `sku` (CODIGO_VARIANTE). El SKU numérico se normaliza **sin ceros a la izquierda** al importar
+  (`normSku()` en `web/src/lib/import/parseExcel.ts`) para que ventas y stock siempre crucen.
 
 ## Comandos
 
