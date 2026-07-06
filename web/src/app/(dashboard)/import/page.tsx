@@ -17,6 +17,7 @@ import {
   appendStockSnapshot,
   finalizeStockSnapshot,
   lastSalesDate,
+  loadedSalesDates,
 } from './actions';
 import { resolveStoreLabels } from '../store-aliases/actions';
 import type { Store } from '@/lib/types';
@@ -64,8 +65,9 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-// Calendario de un mes con los días ya cargados (día <= última fecha) marcados.
-function MonthCalendar({ year, month0, last, today }: { year: number; month0: number; last: string | null; today: string }) {
+// Calendario de un mes con los días REALMENTE cargados marcados (por pertenencia
+// al set de días cargados, no "todo <= máximo"): así se ven los huecos internos.
+function MonthCalendar({ year, month0, loaded, today }: { year: number; month0: number; loaded: Set<string>; today: string }) {
   const first = new Date(year, month0, 1);
   const startDow = first.getDay(); // 0 = domingo
   const daysInMonth = new Date(year, month0 + 1, 0).getDate();
@@ -84,18 +86,18 @@ function MonthCalendar({ year, month0, last, today }: { year: number; month0: nu
         {cells.map((d, i) => {
           if (d == null) return <div key={i} />;
           const s = iso(d);
-          const loaded = last != null && s <= last;
+          const loaded_ = loaded.has(s);
           const isToday = s === today;
           return (
             <div
               key={i}
-              title={loaded ? 'Ventas cargadas' : 'Sin cargar'}
+              title={loaded_ ? 'Ventas cargadas' : 'Sin cargar'}
               style={{
                 textAlign: 'center',
                 padding: '4px 0',
                 borderRadius: 5,
-                background: loaded ? '#2B5BE2' : '#EEF2FB',
-                color: loaded ? '#fff' : '#495a80',
+                background: loaded_ ? '#2B5BE2' : '#EEF2FB',
+                color: loaded_ ? '#fff' : '#495a80',
                 outline: isToday ? '2px solid #142A6E' : 'none',
               }}
             >
@@ -117,6 +119,7 @@ export default function ImportPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [lastSales, setLastSales] = useState<string | null>(null);
+  const [loadedDays, setLoadedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase
@@ -126,10 +129,20 @@ export default function ImportPage() {
       .then(({ data }) => setStores((data ?? []) as Store[]));
   }, [supabase]);
 
-  // Al abrir Ventas (y al terminar una carga), consulta hasta qué día hay ventas.
+  // Al abrir Ventas (y al terminar una carga), consulta hasta qué día hay ventas
+  // y qué días (del mes anterior + vigente) están realmente cargados.
   useEffect(() => {
     if (kind !== 'sales_daily' || busy) return;
     lastSalesDate().then(setLastSales).catch(() => setLastSales(null));
+    const t = new Date();
+    const prevY = t.getMonth() === 0 ? t.getFullYear() - 1 : t.getFullYear();
+    const prevM0 = t.getMonth() === 0 ? 11 : t.getMonth() - 1;
+    const from = `${prevY}-${String(prevM0 + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    const to = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    loadedSalesDates(from, to)
+      .then((days) => setLoadedDays(new Set(days)))
+      .catch(() => setLoadedDays(new Set()));
   }, [kind, busy]);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id;
@@ -290,8 +303,8 @@ export default function ImportPage() {
                 const prevM = t.getMonth() === 0 ? 11 : t.getMonth() - 1;
                 return (
                   <>
-                    <MonthCalendar year={prevY} month0={prevM} last={lastSales} today={today} />
-                    <MonthCalendar year={t.getFullYear()} month0={t.getMonth()} last={lastSales} today={today} />
+                    <MonthCalendar year={prevY} month0={prevM} loaded={loadedDays} today={today} />
+                    <MonthCalendar year={t.getFullYear()} month0={t.getMonth()} loaded={loadedDays} today={today} />
                   </>
                 );
               })()}

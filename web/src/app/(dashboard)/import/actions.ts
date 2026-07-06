@@ -145,6 +145,16 @@ export async function lastSalesDate(): Promise<string | null> {
   return (data?.[0]?.sale_date as string | undefined) ?? null;
 }
 
+// Días DISTINTOS con ventas cargadas en un rango (para pintar el calendario por
+// día real y no "todo hasta el máximo"). Así se ven los huecos internos.
+export async function loadedSalesDates(from: string, to: string): Promise<string[]> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc('sales_loaded_days', { p_from: from, p_to: to });
+  if (error) throw new Error(error.message);
+  return (Array.isArray(data) ? data : []) as string[];
+}
+
 type SalesDailyInsert = Omit<SalesDailyRow, 'store_label'> & { store_id: string };
 
 // Inserta un lote de ventas diarias (ya agregadas por store/sku/fecha). No recomputa.
