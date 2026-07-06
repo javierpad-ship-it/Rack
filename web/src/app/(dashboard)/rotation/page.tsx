@@ -19,7 +19,7 @@ const GROUPS: { value: string; label: string }[] = [
 type Filters = { resp: string[]; gender: string[]; mundo: string[]; embarque: string[]; brand: string[]; linea: string[] };
 type GroupRow = { grp: string; cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; irp_proy: number; mgn: number };
 type StoreRow = { store: string; cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; irp_proy: number; mgn: number };
-type HmCell = { grp: string; band?: string; talla?: string; irp: number; cant: number; stk?: number };
+type HmCell = { grp: string; band?: string; talla?: string; irp: number; irp_proy: number; cant: number; stk?: number };
 type Report = {
   snap: string | null; complete: boolean; days_total: number; days_elapsed: number; group_by: string;
   kpis: { cant: number; val: number; mg: number; stk: number; stk_val: number; irp: number; mgn: number; proy_cant: number; irp_proy: number };
@@ -64,6 +64,7 @@ export default function RotationPage() {
   const [linea, setLinea] = useState('');
 
   const [tab, setTab] = useState<'resumen' | 'stores'>('resumen');
+  const [hmProj, setHmProj] = useState(false); // false = IRP actual, true = proyectado
   const [report, setReport] = useState<Report | null>(null);
   const [storeRows, setStoreRows] = useState<StoreRow[]>([]);
   const [storePriceHm, setStorePriceHm] = useState<HmCell[]>([]);
@@ -290,8 +291,9 @@ export default function RotationPage() {
             )}
           </table>
 
-          <Heatmap title={`IRP por rango de precio de venta (por ${grpLabel.toLowerCase()})`} rows={groups} cols={PRICE_BANDS} cell={(g, c) => priceMap.get(`${g}|${c}`)} />
-          <Heatmap title={`IRP por talla (por ${grpLabel.toLowerCase()})`} rows={groups} cols={tallas} cell={(g, c) => tallaMap.get(`${g}|${c}`)} />
+          <HmToggle proj={hmProj} setProj={setHmProj} />
+          <Heatmap proj={hmProj} title={`IRP por rango de precio de venta (por ${grpLabel.toLowerCase()})`} rows={groups} cols={PRICE_BANDS} cell={(g, c) => priceMap.get(`${g}|${c}`)} />
+          <Heatmap proj={hmProj} title={`IRP por talla (por ${grpLabel.toLowerCase()})`} rows={groups} cols={tallas} cell={(g, c) => tallaMap.get(`${g}|${c}`)} />
         </>
       )}
 
@@ -327,8 +329,9 @@ export default function RotationPage() {
           </table>
           <p className="muted" style={{ fontSize: 12 }}>Usa los filtros de arriba (género, mundo, responsable, etc.) para acotar el análisis por tienda.</p>
 
-          <Heatmap title="IRP por rango de precio de venta (por tienda)" rows={storeNames} cols={PRICE_BANDS} cell={(g, c) => storePriceMap.get(`${g}|${c}`)} />
-          <Heatmap title="IRP por talla (por tienda)" rows={storeNames} cols={storeTallas} cell={(g, c) => storeTallaMap.get(`${g}|${c}`)} />
+          <HmToggle proj={hmProj} setProj={setHmProj} />
+          <Heatmap proj={hmProj} title="IRP por rango de precio de venta (por tienda)" rows={storeNames} cols={PRICE_BANDS} cell={(g, c) => storePriceMap.get(`${g}|${c}`)} />
+          <Heatmap proj={hmProj} title="IRP por talla (por tienda)" rows={storeNames} cols={storeTallas} cell={(g, c) => storeTallaMap.get(`${g}|${c}`)} />
         </>
       )}
     </div>
@@ -355,14 +358,26 @@ function Kpi({ label, value, color }: { label: string; value: string; color?: st
   );
 }
 
-function Heatmap({ title, rows, cols, cell }: {
-  title: string; rows: string[]; cols: string[];
+// Alterna los mapas de calor entre IRP actual y proyectado al mes.
+function HmToggle({ proj, setProj }: { proj: boolean; setProj: (v: boolean) => void }) {
+  return (
+    <div className="row" style={{ gap: 8, marginTop: 20, alignItems: 'center' }}>
+      <span className="muted" style={{ fontSize: 13 }}>Mapas de calor:</span>
+      <button className={proj ? 'secondary' : ''} onClick={() => setProj(false)}>IRP actual</button>
+      <button className={proj ? '' : 'secondary'} onClick={() => setProj(true)}>Proyectado al mes</button>
+    </div>
+  );
+}
+
+function Heatmap({ title, rows, cols, cell, proj }: {
+  title: string; rows: string[]; cols: string[]; proj: boolean;
   cell: (row: string, col: string) => HmCell | undefined;
 }) {
   if (rows.length === 0 || cols.length === 0) return null;
+  const val = (v: HmCell) => (proj ? v.irp_proy : v.irp);
   return (
     <div style={{ marginTop: 20 }}>
-      <h2 style={{ marginBottom: 6 }}>{title}</h2>
+      <h2 style={{ marginBottom: 6 }}>{title}{proj ? ' — proyectado' : ''}</h2>
       <div style={{ overflowX: 'auto' }}>
         <table className="panel" style={{ borderCollapse: 'collapse' }}>
           <thead>
@@ -374,16 +389,16 @@ function Heatmap({ title, rows, cols, cell }: {
                 <td style={{ fontWeight: 600 }}>{r}</td>
                 {cols.map((c) => {
                   const v = cell(r, c);
-                  const cc = v ? irpCell(v.irp) : null;
+                  const cc = v ? irpCell(val(v)) : null;
                   return (
                     <td key={c}
-                      title={v ? `IRP ${v.irp}% · vendidas ${fmt(v.cant)} · stock ${fmt(v.stk ?? 0)}` : 'sin datos'}
+                      title={v ? `IRP ${v.irp}% · proyectado ${v.irp_proy}% · vendidas ${fmt(v.cant)} · stock ${fmt(v.stk ?? 0)}` : 'sin datos'}
                       style={{
                         textAlign: 'center', padding: '6px 4px', fontSize: 12,
                         background: cc ? cc.bg : 'transparent',
                         color: cc ? cc.fg : '#9aa7c2',
                       }}>
-                      {v ? `${v.irp}` : '·'}
+                      {v ? `${val(v)}` : '·'}
                     </td>
                   );
                 })}
@@ -393,8 +408,8 @@ function Heatmap({ title, rows, cols, cell }: {
         </table>
       </div>
       <p className="muted" style={{ fontSize: 11 }}>
-        Número = IRP %. Verde ≥ 30 · Naranja 20–30 · Rojo &lt; 20. Incluye todo el stock
-        (lo no vendido entra por su valor unitario de stock).
+        Número = IRP {proj ? 'proyectado al mes ' : ''}%. Verde ≥ 30 · Naranja 20–30 · Rojo &lt; 20.
+        Incluye todo el stock (lo no vendido entra por su valor unitario de stock).
       </p>
     </div>
   );
