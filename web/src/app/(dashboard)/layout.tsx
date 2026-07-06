@@ -17,6 +17,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/coverage', label: 'Cobertura', roles: ['admin', 'analista', 'encargado', 'visual'] },
       { href: '/reports', label: 'Reportes', roles: ANALYTICS },
       { href: '/rotation', label: 'Rotación', roles: ANALYTICS },
+      { href: '/floor', label: 'Piso vs Almacén', roles: ANALYTICS },
       { href: '/alerts', label: 'Alertas', roles: ANALYTICS },
       { href: '/trends', label: 'Tendencias', roles: ANALYTICS },
       { href: '/monthly', label: 'Mensual', roles: ANALYTICS },
