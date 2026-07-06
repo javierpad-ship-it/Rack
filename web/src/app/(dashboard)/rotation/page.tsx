@@ -185,6 +185,21 @@ export default function RotationPage() {
     return m;
   }, [storeTallaHm]);
 
+  // Totalizador de la tabla por tienda (suma de columnas; IRP/Margen recalculados
+  // sobre los agregados, no promediados).
+  const storeTotals = useMemo(() => {
+    const t = storeRows.reduce(
+      (a, r) => ({
+        cant: a.cant + r.cant, val: a.val + r.val, mg: a.mg + r.mg,
+        stk: a.stk + r.stk, stk_val: a.stk_val + r.stk_val,
+      }),
+      { cant: 0, val: 0, mg: 0, stk: 0, stk_val: 0 },
+    );
+    const irp = t.cant + t.stk > 0 ? Math.round((t.cant / (t.cant + t.stk)) * 1000) / 10 : 0;
+    const mgn = t.val > 0 ? Math.round((t.mg / t.val) * 1000) / 10 : 0;
+    return { ...t, irp, mgn };
+  }, [storeRows]);
+
   const k = report?.kpis;
   const grpLabel = GROUPS.find((g) => g.value === groupBy)?.label ?? 'Grupo';
 
@@ -263,6 +278,16 @@ export default function RotationPage() {
               ))}
               {(report?.rows ?? []).length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
             </tbody>
+            {(report?.rows ?? []).length > 0 && (
+              <tfoot>
+                <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+                  <td>TOTAL</td><td>{fmt(k.cant)}</td><td>{fmt(k.val)}</td><td>{fmt(k.stk)}</td><td>{fmt(k.stk_val)}</td>
+                  <td><span style={{ color: irpText(k.irp) }}>{k.irp}%</span></td>
+                  <td>{k.mgn}%</td>
+                  {!report?.complete && <td><span style={{ color: irpText(k.irp_proy) }}>{k.irp_proy}%</span></td>}
+                </tr>
+              </tfoot>
+            )}
           </table>
 
           <Heatmap title={`IRP por rango de precio de venta (por ${grpLabel.toLowerCase()})`} rows={groups} cols={PRICE_BANDS} cell={(g, c) => priceMap.get(`${g}|${c}`)} />
@@ -288,6 +313,17 @@ export default function RotationPage() {
               ))}
               {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
             </tbody>
+            {storeRows.length > 0 && (
+              <tfoot>
+                <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+                  <td>TOTAL</td><td>{fmt(storeTotals.cant)}</td><td>{fmt(storeTotals.val)}</td>
+                  <td>{fmt(storeTotals.stk)}</td><td>{fmt(storeTotals.stk_val)}</td>
+                  <td><span style={{ color: irpText(storeTotals.irp) }}>{storeTotals.irp}%</span></td>
+                  <td>{storeTotals.mgn}%</td>
+                  <td>—</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
           <p className="muted" style={{ fontSize: 12 }}>Usa los filtros de arriba (género, mundo, responsable, etc.) para acotar el análisis por tienda.</p>
 
