@@ -78,6 +78,22 @@ describe('parseSalesDaily', () => {
     ]);
     expect(rows.reduce((a, r) => a + r.units, 0)).toBe(18);
   });
+
+  // Regresión: el POS exporta el CODIGO_VARIANTE con ceros a la izquierda
+  // (000001000000358024) y el stock sin ellos (1000000358024). Deben normalizar
+  // al mismo SKU para que la venta cruce con el stock.
+  it('quita los ceros a la izquierda del SKU numérico', () => {
+    const buf = csvBuffer(
+      [
+        'FECHA,CODIGO_VARIANTE,TIENDA,Cant Act',
+        '13/06/2026,000001000000358024,El Sol,5',
+        '13/06/2026,AB-0090,El Sol,2',
+      ].join('\n'),
+    );
+    const { rows } = parseSalesDaily(buf);
+    expect(rows[0].sku).toBe('1000000358024');
+    expect(rows[1].sku).toBe('AB-0090'); // alfanumérico: intacto
+  });
 });
 
 describe('parseStock', () => {

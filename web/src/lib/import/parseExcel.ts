@@ -68,6 +68,18 @@ function pick(row: Record<string, unknown>, keys: string[]): unknown {
   return null;
 }
 
+// Normaliza un SKU/código de variante. El POS exporta el CODIGO_VARIANTE con
+// ceros a la izquierda (padding, ej. 000001000000358024), mientras el stock lo
+// trae sin ellos (1000000358024). Al leer en crudo (raw:true) ese padding se
+// conservaba y ventas dejaba de cruzar con stock. Para códigos puramente
+// numéricos se quitan los ceros a la izquierda, así ventas y stock coinciden
+// siempre. Los códigos alfanuméricos se dejan intactos (solo trim).
+export function normSku(v: unknown): string {
+  const s = String(v).trim();
+  if (/^\d+$/.test(s)) return s.replace(/^0+/, '') || '0';
+  return s;
+}
+
 export interface CatalogRow {
   sku: string;
   ean: string | null;
@@ -88,7 +100,7 @@ export function parseCatalog(file: ArrayBuffer): ParseResult<CatalogRow> {
       return;
     }
     rows.push({
-      sku: String(sku).trim(),
+      sku: normSku(sku),
       ean: pick(r, ['ean', 'codigo barra', 'codigo de barra', 'barcode']) as string | null,
       name: name ? String(name).trim() : String(sku),
       family: pick(r, ['familia', 'linea', 'family']) as string | null,
@@ -115,7 +127,7 @@ export function parseSales(file: ArrayBuffer): ParseResult<SalesRow> {
       return;
     }
     rows.push({
-      sku: String(sku).trim(),
+      sku: normSku(sku),
       units: Number(pick(r, ['unidades', 'cantidad', 'units', 'qty']) ?? 0) || 0,
       amount: Number(pick(r, ['importe', 'monto', 'amount', 'total', 'venta']) ?? 0) || 0,
     });
@@ -193,7 +205,7 @@ export function parseSalesDaily(file: ArrayBuffer): ParseResult<SalesDailyRow> {
     }
     rows.push({
       sale_date,
-      sku: String(sku).trim(),
+      sku: normSku(sku),
       store_label: (pick(r, ['tienda', 'store', 'nombre tienda']) as string | null) ?? null,
       article_code: (pick(r, ['codigo_articulo', 'codigo articulo', 'articulo']) as string | null) ?? null,
       description: (pick(r, ['descripcion_articulo', 'descripcion articulo', 'descripcion', 'detalle']) as string | null) ?? null,
@@ -240,7 +252,7 @@ export function parseStockSnapshot(file: ArrayBuffer): ParseResult<StockSnapshot
       return;
     }
     rows.push({
-      sku: String(sku).trim(),
+      sku: normSku(sku),
       store_label: (pick(r, ['tienda', 'store', 'nombre tienda']) as string | null) ?? null,
       units: Math.round(num(pick(r, ['stk fin act', 'stock', 'existencia', 'unidades', 'total']))),
       value: num(pick(r, ['stk val act', 'valor', 'valorizado', 'stock valorizado'])),
@@ -279,7 +291,7 @@ export function parseStock(file: ArrayBuffer): ParseResult<StockRow> {
       return;
     }
     rows.push({
-      sku: String(sku).trim(),
+      sku: normSku(sku),
       total_units: Number(pick(r, ['stock', 'total', 'existencia', 'unidades', 'total_units']) ?? 0) || 0,
     });
   });
