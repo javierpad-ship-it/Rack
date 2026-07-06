@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek, previousIsoWeek } from '@/lib/week';
 import type { Fixture, Store, StoreLayout, WarehouseRow } from '@/lib/types';
@@ -86,6 +86,30 @@ export default function ReportsPage() {
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
 
+  // Totalizadores por tabla.
+  const rowsTot = useMemo(() => rows.reduce(
+    (a, r) => ({
+      units_now: a.units_now + (Number(r.units_now) || 0),
+      units_prev: a.units_prev + (Number(r.units_prev) || 0),
+      delta_units: a.delta_units + (Number(r.delta_units) || 0),
+      remaining_now: a.remaining_now + (Number(r.remaining_now) || 0),
+      amount_now: a.amount_now + (Number(r.amount_now) || 0),
+    }),
+    { units_now: 0, units_prev: 0, delta_units: 0, remaining_now: 0, amount_now: 0 },
+  ), [rows]);
+  const unattTot = useMemo(() => unattributed.reduce(
+    (a, u) => ({ units: a.units + (Number(u.units) || 0), amount: a.amount + (Number(u.amount) || 0) }),
+    { units: 0, amount: 0 },
+  ), [unattributed]);
+  const whTot = useMemo(() => warehouse.reduce(
+    (a, w) => ({
+      total_units: a.total_units + (Number(w.total_units) || 0),
+      floor_units: a.floor_units + (Number(w.floor_units) || 0),
+      warehouse_units: a.warehouse_units + (Number(w.warehouse_units) || 0),
+    }),
+    { total_units: 0, floor_units: 0, warehouse_units: 0 },
+  ), [warehouse]);
+
   return (
     <div>
       <h1>Reportes</h1>
@@ -159,6 +183,19 @@ export default function ReportsPage() {
               </tr>
             )}
           </tbody>
+          {rows.length > 0 && (
+            <tfoot>
+              <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+                <td>TOTAL</td>
+                <td>{fmt(rowsTot.units_now)}</td>
+                <td>{fmt(rowsTot.units_prev)}</td>
+                <td className={rowsTot.delta_units >= 0 ? 'pos' : 'neg'}>{rowsTot.delta_units >= 0 ? '+' : ''}{fmt(rowsTot.delta_units)}</td>
+                <td className="muted">—</td>
+                <td>{fmt(rowsTot.remaining_now)} u</td>
+                <td>S/ {fmt(rowsTot.amount_now)}</td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       )}
 
@@ -198,6 +235,15 @@ export default function ReportsPage() {
                 </tr>
               )}
             </tbody>
+            {unattributed.length > 0 && (
+              <tfoot>
+                <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+                  <td colSpan={2}>TOTAL</td>
+                  <td>{fmt(unattTot.units)}</td>
+                  <td>S/ {fmt(unattTot.amount)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}
@@ -229,6 +275,16 @@ export default function ReportsPage() {
               </tr>
             )}
           </tbody>
+          {warehouse.length > 0 && (
+            <tfoot>
+              <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+                <td>TOTAL</td>
+                <td>{fmt(whTot.total_units)}</td>
+                <td>{fmt(whTot.floor_units)}</td>
+                <td>{fmt(whTot.warehouse_units)}</td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       )}
     </div>

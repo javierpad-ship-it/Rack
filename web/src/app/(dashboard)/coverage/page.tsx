@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeek } from '@/lib/week';
 import type { Store } from '@/lib/types';
@@ -53,6 +53,10 @@ export default function CoveragePage() {
 
   const done = rows.filter((r) => r.scanned).length;
   const pct = rows.length ? Math.round((done / rows.length) * 100) : 0;
+  const tot = useMemo(() => rows.reduce(
+    (a, r) => ({ skus: a.skus + (Number(r.skus_count) || 0), units: a.units + (Number(r.units_count) || 0) }),
+    { skus: 0, units: 0 },
+  ), [rows]);
 
   return (
     <div>
@@ -108,6 +112,17 @@ export default function CoveragePage() {
             </tr>
           )}
         </tbody>
+        {rows.length > 0 && (
+          <tfoot>
+            <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+              <td>TOTAL</td>
+              <td className={done === rows.length ? 'pos' : undefined}>{done}/{rows.length} ({pct}%)</td>
+              <td className="muted">—</td>
+              <td>{tot.skus.toLocaleString('es-PE')}</td>
+              <td>{tot.units.toLocaleString('es-PE')}</td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { currentMonth } from '@/lib/week';
 import type { Store } from '@/lib/types';
@@ -50,6 +50,20 @@ export default function MonthlyPage() {
   }, [load]);
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
+
+  const tot = useMemo(() => rows.reduce(
+    (a, r) => ({
+      mtd_units: a.mtd_units + (Number(r.mtd_units) || 0),
+      mtd_amount: a.mtd_amount + (Number(r.mtd_amount) || 0),
+      projected_units: a.projected_units + (Number(r.projected_units) || 0),
+      projected_amount: a.projected_amount + (Number(r.projected_amount) || 0),
+      exposed_units: a.exposed_units + (Number(r.exposed_units) || 0),
+      total_stock: a.total_stock + (Number(r.total_stock) || 0),
+    }),
+    { mtd_units: 0, mtd_amount: 0, projected_units: 0, projected_amount: 0, exposed_units: 0, total_stock: 0 },
+  ), [rows]);
+  // Rotación proyectada global = venta proyectada / stock total.
+  const totRot = tot.total_stock > 0 ? tot.projected_units / tot.total_stock : null;
 
   return (
     <div>
@@ -108,6 +122,18 @@ export default function MonthlyPage() {
             </tr>
           )}
         </tbody>
+        {rows.length > 0 && (
+          <tfoot>
+            <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+              <td>TOTAL</td>
+              <td>{fmt(tot.mtd_units)} u · S/ {fmt(tot.mtd_amount)}</td>
+              <td>{fmt(tot.projected_units)} u · S/ {fmt(tot.projected_amount)}</td>
+              <td>{fmt(tot.exposed_units)} u</td>
+              <td>{fmt(tot.total_stock)} u</td>
+              <td>{totRot != null ? totRot.toFixed(2) : '—'}</td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

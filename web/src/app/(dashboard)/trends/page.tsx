@@ -104,6 +104,16 @@ export default function TrendsPage() {
             </tr>
           )}
         </tbody>
+        {byFixture.size > 0 && (
+          <tfoot>
+            <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
+              <td>TOTAL</td>
+              {weeks.map((w) => (
+                <td key={w}>S/ {fmt(rows.filter((r) => r.week === w).reduce((a, r) => a + (Number(r.amount_sold) || 0), 0))}</td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
