@@ -43,6 +43,67 @@ function irpText(irp: number): string {
 }
 const fmt = (n: number) => Math.round(Number(n) || 0).toLocaleString('es-PE');
 
+// Paleta categórica (distinguible y accesible) para los donuts.
+const PALETTE = ['#2B5BE2', '#2E9E44', '#E8A33D', '#C0473B', '#7E57C2', '#00A3A3', '#D1477A', '#8D9440'];
+
+// Arma los ítems del donut: top 7 por valor + "Otros" (para dimensiones con
+// muchas categorías, ej. código de artículo).
+function donutItems(rows: BRow[], key: 'piso' | 'ventas'): { label: string; value: number }[] {
+  const items = rows
+    .map((r) => ({ label: r.key, value: Number(r[key]) || 0 }))
+    .filter((i) => i.value > 0)
+    .sort((a, b) => b.value - a.value);
+  if (items.length <= 8) return items;
+  const top = items.slice(0, 7);
+  const otros = items.slice(7).reduce((a, i) => a + i.value, 0);
+  return [...top, { label: 'Otros', value: otros }];
+}
+
+// Barra de participación dentro de la celda (texto % + barra proporcional).
+function PctBar({ pct, color }: { pct: number; color: string }) {
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <div style={{ minWidth: 88 }}>
+      <div style={{ fontSize: 12, marginBottom: 2 }}>{p.toFixed(1)}%</div>
+      <div style={{ height: 6, background: '#EEF2FB', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${p}%`, height: '100%', background: color }} />
+      </div>
+    </div>
+  );
+}
+
+// Donut de participación (torta con centro hueco) + leyenda.
+function Donut({ title, items }: { title: string; items: { label: string; value: number }[] }) {
+  const total = items.reduce((a, i) => a + i.value, 0);
+  if (total <= 0) return <div style={{ minWidth: 200 }}><div style={{ fontWeight: 600, fontSize: 13, textAlign: 'center', marginBottom: 6 }}>{title}</div><p className="muted" style={{ fontSize: 12, textAlign: 'center' }}>Sin datos</p></div>;
+  let acc = 0;
+  const stops = items.map((it, i) => {
+    const start = (acc / total) * 100;
+    acc += it.value;
+    const end = (acc / total) * 100;
+    return `${PALETTE[i % PALETTE.length]} ${start}% ${end}%`;
+  }).join(', ');
+  return (
+    <div style={{ minWidth: 200 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{title}</div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ width: 104, height: 104, borderRadius: '50%', background: `conic-gradient(${stops})`, position: 'relative', flexShrink: 0 }}>
+          <div style={{ position: 'absolute', inset: '24%', background: '#fff', borderRadius: '50%' }} />
+        </div>
+        <div style={{ fontSize: 12 }}>
+          {items.map((it, i) => (
+            <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: PALETTE[i % PALETTE.length], display: 'inline-block', flexShrink: 0 }} />
+              <span style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
+              <span className="muted">{Math.round((it.value / total) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Construye y descarga un CSV a partir de filas de objetos.
 function downloadCsv(filename: string, headers: { key: string; label: string }[], rows: Record<string, unknown>[]) {
   const esc = (v: unknown) => {
@@ -243,39 +304,52 @@ export default function FloorPage() {
           {bdLoading && <p className="muted">Cargando…</p>}
           {!bdLoading && bd && (
             <>
+              {/* Donuts de participación al costado, para lectura rápida */}
+              <div className="panel row" style={{ gap: 28, flexWrap: 'wrap', marginBottom: 12, justifyContent: 'space-around' }}>
+                <Donut title="Participación de PISO" items={donutItems(bd.rows, 'piso')} />
+                <Donut title="Participación de VENTA" items={donutItems(bd.rows, 'ventas')} />
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
               <table className="panel">
                 <thead>
                   <tr>
                     <th>{DIMS.find((d) => d.value === dim)?.label}</th>
-                    <th>Piso (und)</th><th>Almacén (und)</th><th>Total (und)</th>
-                    <th>% en piso</th><th>Ventas (und)</th><th>IRP piso</th><th>IRP proy. mes</th>
+                    <th>Piso (und)</th><th>Part. piso</th><th>Almacén (und)</th><th>Total (und)</th>
+                    <th>% en piso</th><th>Ventas (und)</th><th>Part. venta</th><th>IRP piso</th><th>IRP proy. mes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bd.rows.map((r) => (
                     <tr key={r.key}>
-                      <td>{r.key}</td><td>{fmt(r.piso)}</td><td>{fmt(r.almacen)}</td><td>{fmt(r.total)}</td>
-                      <td>{r.pct_piso}%</td><td>{fmt(r.ventas)}</td>
+                      <td>{r.key}</td>
+                      <td>{fmt(r.piso)}</td>
+                      <td><PctBar pct={bd.tot.piso > 0 ? (r.piso / bd.tot.piso) * 100 : 0} color="#2B5BE2" /></td>
+                      <td>{fmt(r.almacen)}</td><td>{fmt(r.total)}</td>
+                      <td>{r.pct_piso}%</td>
+                      <td>{fmt(r.ventas)}</td>
+                      <td><PctBar pct={bd.tot.ventas > 0 ? (r.ventas / bd.tot.ventas) * 100 : 0} color="#2E9E44" /></td>
                       <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
                       <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>
                     </tr>
                   ))}
-                  {bd.rows.length === 0 && <tr><td colSpan={8} className="muted">Sin datos para esta tienda/semana.</td></tr>}
+                  {bd.rows.length === 0 && <tr><td colSpan={10} className="muted">Sin datos para esta tienda/semana.</td></tr>}
                 </tbody>
                 {bd.rows.length > 0 && (
                   <tfoot>
                     <tr style={{ fontWeight: 700, borderTop: '2px solid #2B5BE2' }}>
-                      <td>TOTAL</td><td>{fmt(bd.tot.piso)}</td><td>{fmt(bd.tot.almacen)}</td><td>{fmt(bd.tot.total)}</td>
-                      <td>{bd.tot.pct_piso}%</td><td>{fmt(bd.tot.ventas)}</td>
+                      <td>TOTAL</td><td>{fmt(bd.tot.piso)}</td><td>100%</td><td>{fmt(bd.tot.almacen)}</td><td>{fmt(bd.tot.total)}</td>
+                      <td>{bd.tot.pct_piso}%</td><td>{fmt(bd.tot.ventas)}</td><td>100%</td>
                       <td><span style={{ color: irpText(bd.tot.irp) }}>{bd.tot.irp}%</span></td>
                       <td><span style={{ color: irpText(bd.tot.irp_proy) }}>{bd.tot.irp_proy}%</span></td>
                     </tr>
                   </tfoot>
                 )}
               </table>
+              </div>
               <p className="muted" style={{ fontSize: 12 }}>
-                Piso = escaneado en muebles · Almacén = stock − piso · % en piso = qué parte del stock
-                está expuesta. Muestra dónde está la mercadería y cómo rota por {DIMS.find((d) => d.value === dim)?.label.toLowerCase()}.
+                Part. piso = qué % del piso total representa · Part. venta = qué % de la venta total.
+                Comparalas: si un responsable ocupa mucho piso pero vende poco (o al revés), ahí hay algo que ajustar.
               </p>
             </>
           )}
