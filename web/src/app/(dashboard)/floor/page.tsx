@@ -137,7 +137,8 @@ export default function FloorPage() {
       const rows = (data ?? []) as Record<string, unknown>[];
       if (rows.length === 0) { alert('No hay piso escaneado en esta semana para exportar.'); return; }
       downloadCsv(`piso_de_venta_${week}.csv`, [
-        { key: 'tienda', label: 'Tienda' },
+        { key: 'tienda', label: 'Tienda (Rack One)' },
+        { key: 'tienda_archivo', label: 'Tienda (archivo)' },
         { key: 'mueble', label: 'Mueble (ubicación)' },
         { key: 'sku', label: 'SKU' },
         { key: 'descripcion', label: 'Descripción' },
