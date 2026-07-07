@@ -6,6 +6,9 @@
 -- sin tope de filas. El cliente ya lo lee como array.
 -- ============================================================================
 
+-- Cambia el tipo de retorno (tabla → json): hay que soltar la función antes.
+drop function if exists floor_detail(text);
+
 create or replace function floor_detail(p_week text)
 returns json language sql stable security definer set search_path = public, pg_temp as $$
   with role_store as (
