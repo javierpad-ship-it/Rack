@@ -39,6 +39,34 @@ API: **`/api/export/floor`** (route handler) — devuelve `.xlsx` del piso de to
 las tiendas, protegido por `EXPORT_TOKEN`. Lo consume Power Automate (export
 nocturno a SharePoint). Ver `EXPORT_NOCTURNO.md` (si existe) o sección abajo.
 
+## Flujo de datos (mapa)
+
+```mermaid
+flowchart TD
+  POS[POS / QlikView] -->|Excel ventas diarias| IMP[/import → parseExcel/]
+  POS -->|Excel foto de stock| IMP
+  IMP -->|appendSalesDaily + recompute| SD[(sales_daily)]
+  IMP -->|snapshot por fecha| SS[(stock_snapshots + stock_current)]
+  SD -->|recompute_sales_week| SAL[(sales semanal)]
+  SAL -->|attribute_sales| ATT[(sales_attribution)]
+
+  EDA[Honeywell EDA52] -->|escaneo offline Room| SW[SyncWorker]
+  SW -->|upsert por client_uid| SCN[(scan_sessions + scan_lines)]
+
+  SD --> RPT{Funciones SQL}
+  SS --> RPT
+  SCN --> RPT
+  ATT --> RPT
+  RPT -->|rotation_report / rotation_stores| ROT[/rotation/]
+  RPT -->|floor_vs_warehouse / floor_breakdown| FLR[/floor/]
+  RPT -->|floor_detail_all| API[/api/export/floor .xlsx/]
+  RPT -->|alert_drill / store_alerts| ALR[/alerts/]
+  API -->|Power Automate 23:00| SP[SharePoint]
+```
+
+Clave transversal: **SKU canónico sin ceros** (normSku al escribir, norm_sku al
+leer) para que ventas ↔ stock ↔ escaneo siempre crucen. Ver gotchas #1 y #2.
+
 ## Modelo de datos (tablas clave)
 
 - `stores`, `profiles` (rol + `store_id`), `fixtures` (muebles, `barcode`, `floor`).
