@@ -11,6 +11,11 @@ Solución multi-tienda para medir **rotación y venta por mueble**. Tres compone
 
 Ver `README.md`, `docs/ARCHITECTURE.md` y `docs/ROADMAP.md`.
 
+**Para levantar contexto rápido y no perder congruencia:**
+`docs/ESTADO_DEL_SISTEMA.md` (índice: rutas, tablas, flujos), `docs/REPORTES_Y_RPC.md`
+(catálogo de funciones SQL) y `docs/LECCIONES_Y_GOTCHAS.md` (bugs resueltos — leer
+antes de tocar import/SKU/semana/sync/reportes). Mantenerlos al día al agregar features.
+
 ## Reglas de negocio clave (no romper)
 
 - **Atribución de ventas por SKU exacto.** Si un SKU está en varios muebles esa semana, la venta va al
