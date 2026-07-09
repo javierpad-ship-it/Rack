@@ -55,6 +55,9 @@ begin
 end $$;
 
 -- La comparativa por mueble también devuelve el piso actual (semana en curso).
+-- Nota: `create or replace` no puede cambiar el tipo de retorno de la versión
+-- creada en 0002; hay que dropearla antes para un `db reset` limpio.
+drop function if exists fixture_week_over_week(uuid, text, text);
 create or replace function fixture_week_over_week(p_store_id uuid, p_week text, p_prev_week text)
 returns table (
   fixture_id uuid,
