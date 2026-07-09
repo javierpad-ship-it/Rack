@@ -227,6 +227,10 @@ table.grid th,table.grid td{padding:11px 12px;text-align:right;white-space:nowra
 table.grid th:first-child,table.grid td:first-child,table.grid th:nth-child(2),table.grid td:nth-child(2){text-align:left}
 table.grid thead th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--card-2);border-bottom:1px solid var(--line);position:sticky;top:0}
 table.grid tbody tr+tr td{border-top:1px solid var(--line)}
+table.grid.wide{min-width:1040px}
+table.grid td.lft,table.grid th.lft{text-align:left}
+table.grid .grp{border-left:1px solid var(--line)}
+table.grid thead th.scope{font-size:10px;color:var(--royal);letter-spacing:.1em}
 .acts{display:flex;gap:6px;justify-content:flex-end}
 .iabtn{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;color:var(--ink)}
 .iabtn.ok{border-color:var(--ok);color:var(--ok)}
@@ -536,30 +540,40 @@ table.grid tbody tr+tr td{border-top:1px solid var(--line)}
             <span class="note" style="margin:0;align-self:center">Ves solo las propuestas de <b>tus líneas</b> (campo <code>resp</code>).</span>
           </div>
           <div class="table-wrap">
-            <table class="grid">
-              <thead><tr>
-                <th>Genérico</th><th>Descripción</th><th>PVP vig.</th><th>Propuesto</th><th>Costo prom.</th><th>IRP vig.</th><th>IRP prop.</th><th>Solicitante</th><th>Acciones</th>
-              </tr></thead>
+            <table class="grid wide">
+              <thead>
+                <tr>
+                  <th class="lft">Genérico</th><th class="lft">Producto</th><th class="lft">Solicitante</th><th class="lft">Tienda</th>
+                  <th>PVP vig.</th><th>Propuesto</th><th>Costo prom.</th>
+                  <th class="scope grp">Stk tienda</th><th class="scope">Rot. tienda</th>
+                  <th class="scope grp">Stk cadena</th><th class="scope">Rot. cadena</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
               <tbody class="tnum" id="propBody">
                 <tr>
-                  <td>1000035317</td><td>Sandalia Vera</td><td>129.90</td><td>99.90</td><td>38.00</td>
-                  <td class="irp-up">70.7%</td><td class="irp-dn">62.0%</td><td>Javier P.</td>
+                  <td class="lft">1000035317</td><td class="lft">Sandalia Vera</td><td class="lft">Javier P.</td><td class="lft">Alfonso Ugarte</td>
+                  <td>129.90</td><td>99.90</td><td>38.00</td>
+                  <td class="grp">3</td><td class="irp-dn">43%</td><td class="grp">41</td><td class="irp-dn">38%</td>
                   <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
                 </tr>
                 <tr>
-                  <td>1000098370</td><td>Bota Andina</td><td>59.90</td><td>49.90</td><td>22.10</td>
-                  <td class="irp-up">63.1%</td><td class="irp-dn">55.7%</td><td>M. Flores</td>
+                  <td class="lft">1000098370</td><td class="lft">Bota Andina</td><td class="lft">M. Flores</td><td class="lft">Mega Plaza</td>
+                  <td>59.90</td><td>49.90</td><td>22.10</td>
+                  <td class="grp">5</td><td class="irp-dn">28%</td><td class="grp">63</td><td class="irp-up">46%</td>
                   <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
                 </tr>
                 <tr>
-                  <td>1000120334</td><td>Zapatilla Urban</td><td>99.90</td><td>79.90</td><td>41.50</td>
-                  <td class="irp-up">58.5%</td><td class="irp-dn">48.1%</td><td>Javier P.</td>
+                  <td class="lft">1000120334</td><td class="lft">Zapatilla Urban</td><td class="lft">L. Quispe</td><td class="lft">Salaverry</td>
+                  <td>99.90</td><td>79.90</td><td>41.50</td>
+                  <td class="grp">2</td><td class="irp-up">61%</td><td class="grp">58</td><td class="irp-up">52%</td>
                   <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="note">IRP (por defecto) = margen sobre PVP = (PVP − costo promedio) / PVP. Al decidir, le llega la alerta al solicitante en Prisma.</p>
+          <p class="note"><b>Rotación = IRP</b> de Rack One = ventas(und) / (ventas + stock) × 100, calculado por alcance
+          (tienda del solicitante y toda la cadena). <b>Stk</b> = stock del genérico en cada alcance. Al decidir, le llega la alerta al solicitante en Prisma.</p>
         </div>
 
         <!-- Export -->
