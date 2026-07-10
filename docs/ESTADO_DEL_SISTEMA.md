@@ -13,8 +13,15 @@ mueble/piso de venta**, y saber **dónde está la mercadería** (piso vs almacé
 | Módulo | Stack | Rol |
 |---|---|---|
 | `supabase/` | Postgres + RLS + funciones `security definer` | Datos, atribución, métricas, reportes |
-| `web/` | Next.js 14 (App Router) + TS | Admin, import, reportes, export |
-| `mobile/` | Kotlin + Compose (Honeywell EDA52) | Escaneo offline-first del piso |
+| `web/` | Next.js 14 (App Router) + TS | Admin, import, reportes, export, back-office Prisma |
+| `mobile/` | Kotlin + Compose (Honeywell EDA52) | Escaneo offline-first del piso (inventario/repo) |
+| `prisma/` | Next.js PWA (login DNI, escáner ZXing) | **Prisma**: app de campo para proponer cambios de precio (iPhone/Android) |
+
+> **Prisma** es un módulo agregado sobre la misma base: la app de campo (`prisma/`)
+> genera **propuestas de cambio de precio** que el back-office (`/price-proposals`,
+> `/price-export`) revisa y exporta a SAP. Migraciones `0045–0053`. Comparte
+> `stores`/`profiles`; tablas propias: precios por genérico, propuestas, exports,
+> usuarios Prisma (DNI).
 
 Despliegue: **web en Railway**, **backend en Supabase Cloud**, **APK por GitHub
 Actions**. Ver `DEPLOY.md`.
@@ -32,6 +39,10 @@ Actions**. Ver `DEPLOY.md`.
 | `/trends` | Tendencias (mueble × semana) | admin/analista/encargado | `fixture_trends` |
 | `/monthly` | Proyección mensual por mueble | admin/analista/encargado | `fixture_monthly_metrics` |
 | `/import` | Importar ventas diarias y stock (foto) | admin | Server Actions (`import/actions.ts`) |
+| `/precios` | Importar precios (PVP) por genérico | admin | Server Actions (parseExcel PVP) |
+| `/price-proposals` | **Prisma**: bandeja de propuestas de cambio de precio | admin/encargado/analista | RPCs Prisma (0050) |
+| `/price-export` | **Prisma**: exportar a SAP los precios aprobados | admin | `0049`/`0050` |
+| `/users-prisma` | **Prisma**: usuarios de la app de campo (DNI) | admin | `0047` |
 | `/stores` `/fixtures` `/layout` `/labels` `/calendar` `/store-aliases` `/users` | Mantenimiento | admin/visual/encargado | CRUD directo |
 | `/privacidad` | Política de privacidad (Play) | público | — |
 

@@ -92,6 +92,37 @@ Los archivos grandes de import se **agregan/deduplican en el navegador** y se
 suben **por lotes** (`appendSalesDaily`), con el recálculo una sola vez al final,
 para no exceder el límite de body de los Server Actions.
 
+## #9 — Una sesión de escaneo trabada bloqueaba a las demás
+
+**Síntoma:** varias sesiones quedan "sin sincronizar" en el equipo aunque haya
+señal; algunas suben y otras no, de forma persistente.
+
+**Causa:** el `SyncWorker` recorría las sesiones pendientes en un solo bucle sin
+try/catch por sesión: si una fallaba (por cualquier motivo), la excepción
+abortaba el bucle y **las de atrás no se intentaban**.
+
+**Fix (commit `121e38c`, mobile v0.1.2):** cada sesión se sube de forma
+**independiente**; si una falla, se saltea y se sigue con el resto (solo la
+trabada queda pendiente). El refresh de token por 401 se maneja por sesión y el
+pull de catálogo pasa a no-crítico. **Requiere APK nuevo** para que tome efecto.
+
+## #10 — Recrear muebles rompe la sincronización del escaneo (FK)
+
+**Síntoma:** sesiones de ciertos muebles no sincronizan **ni el header**, aunque
+el mueble "existe" por nombre.
+
+**Causa:** `scan_sessions.fixture_id` tiene FK a `fixtures(id)`. Si los muebles se
+**borran y recrean** (import de plano, edición masiva), cambia su `id`. El equipo
+tiene el `id` viejo cacheado offline; al sincronizar una sesión escaneada con ese
+id, la **FK la rechaza** y queda trabada para siempre.
+
+**Regla:** los muebles se **editan en su lugar**, NUNCA se borran y recrean (el
+`id` no debe cambiar). Recuperación de sesiones trabadas por esto: soltar la FK
+temporal (`alter table scan_sessions drop constraint <fk>`) → sincronizar (entran
+como huérfanas con el id viejo) → `update` del `fixture_id` al id nuevo (matcheando
+por `scanned_at`) → re-agregar la FK. Combinar con el fix #9 (APK) para que no
+bloquee a las demás.
+
 ## Conector Supabase (operativo, no del producto)
 
 En sesiones de chat el conector MCP a veces figura `enabledInChat: false` (apagado
