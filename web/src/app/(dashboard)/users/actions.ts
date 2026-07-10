@@ -42,6 +42,7 @@ export interface UserRow {
   full_name: string | null;
   role: UserRole;
   store_id: string | null;
+  lines: string[];
 }
 
 export async function listUsers(): Promise<ActionResult<UserRow[]>> {
@@ -52,13 +53,22 @@ export async function listUsers(): Promise<ActionResult<UserRow[]>> {
 
   try {
     const admin = createAdminClient();
+    // Los usuarios de Prisma (login por DNI) se gestionan en /users-prisma, no aquí.
     const { data: profiles, error: pErr } = await admin
       .from('profiles')
-      .select('id, full_name, role, store_id');
+      .select('id, full_name, role, store_id')
+      .is('dni', null);
     if (pErr) return { ok: false, error: `profiles: ${pErr.message}` };
 
     const { data: authList, error: aErr } = await admin.auth.admin.listUsers();
     if (aErr) return { ok: false, error: `auth.admin: ${aErr.message}` };
+
+    const ids = (profiles ?? []).map((p) => p.id);
+    const { data: lineRows } = ids.length
+      ? await admin.from('user_lines').select('user_id, resp').in('user_id', ids)
+      : { data: [] };
+    const linesByUser = new Map<string, string[]>();
+    (lineRows ?? []).forEach((r) => linesByUser.set(r.user_id, [...(linesByUser.get(r.user_id) ?? []), r.resp]));
 
     const emailById = new Map(authList.users.map((u) => [u.id, u.email ?? null]));
     const rows: UserRow[] = (profiles ?? []).map((p) => ({
@@ -67,8 +77,54 @@ export async function listUsers(): Promise<ActionResult<UserRow[]>> {
       full_name: p.full_name,
       role: p.role as UserRole,
       store_id: p.store_id,
+      lines: linesByUser.get(p.id) ?? [],
     }));
     return { ok: true, data: rows };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+// Líneas (resp) conocidas — de la foto de stock más reciente, para elegir responsables.
+export async function listLineOptions(): Promise<ActionResult<string[]>> {
+  const envErr = envProblem();
+  if (envErr) return { ok: false, error: envErr };
+  const adminErr = await ensureAdmin();
+  if (adminErr) return { ok: false, error: adminErr };
+
+  const admin = createAdminClient();
+  const { data: snap } = await admin
+    .from('stock_snapshots').select('snapshot_date')
+    .order('snapshot_date', { ascending: false }).limit(1).maybeSingle();
+  if (!snap) return { ok: true, data: [] };
+  const { data, error } = await admin
+    .from('stock_snapshots')
+    .select('resp')
+    .eq('snapshot_date', snap.snapshot_date)
+    .not('resp', 'is', null);
+  if (error) return { ok: false, error: error.message };
+  const set = new Set((data ?? []).map((r) => r.resp as string).filter(Boolean));
+  return { ok: true, data: [...set].sort() };
+}
+
+// Responsable de línea: quién aprueba/deniega/contrapropone las propuestas de
+// precio de Prisma para esa(s) línea(s). No depende de cómo el usuario entra
+// a Rack One (email o DNI) — solo de tener filas en user_lines.
+export async function updateUserLines(userId: string, lines: string[]): Promise<ActionResult> {
+  const envErr = envProblem();
+  if (envErr) return { ok: false, error: envErr };
+  const adminErr = await ensureAdmin();
+  if (adminErr) return { ok: false, error: adminErr };
+
+  try {
+    const admin = createAdminClient();
+    const { error: dErr } = await admin.from('user_lines').delete().eq('user_id', userId);
+    if (dErr) return { ok: false, error: dErr.message };
+    if (lines.length) {
+      const { error: iErr } = await admin.from('user_lines').insert(lines.map((resp) => ({ user_id: userId, resp })));
+      if (iErr) return { ok: false, error: iErr.message };
+    }
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
