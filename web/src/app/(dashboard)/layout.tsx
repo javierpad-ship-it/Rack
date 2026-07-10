@@ -35,7 +35,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Prisma',
     items: [
       { href: '/price-proposals', label: 'Propuestas de precio', roles: ['admin', 'encargado', 'analista'] },
-      { href: '/price-export', label: 'Exportar a SAP', roles: ['admin'] },
+      { href: '/price-export', label: 'Exportar a SAP', roles: ['admin', 'analista'] },
     ],
   },
   // Mantenimiento (grupo colapsable)

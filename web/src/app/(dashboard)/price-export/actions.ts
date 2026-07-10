@@ -7,12 +7,13 @@ export type ActionResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? {} : { data: T }))
   | { ok: false; error: string };
 
-async function ensureAdmin(): Promise<string | null> {
+// Exportar precios a SAP lo pueden hacer admin y analista (igual que la RLS/RPC).
+async function ensureExporter(): Promise<string | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  return profile?.role === 'admin' ? user.id : null;
+  return profile?.role === 'admin' || profile?.role === 'analista' ? user.id : null;
 }
 
 export type ExportableRow = {
@@ -26,8 +27,8 @@ export type ExportableRow = {
 
 // Aceptadas/contrapropuestas con precio decidido, aún no exportadas.
 export async function listExportable(): Promise<ActionResult<ExportableRow[]>> {
-  const uid = await ensureAdmin();
-  if (!uid) return { ok: false, error: 'Requiere rol admin.' };
+  const uid = await ensureExporter();
+  if (!uid) return { ok: false, error: 'Requiere rol admin o analista.' };
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('price_proposals')
@@ -46,8 +47,8 @@ export async function generateExport(
   orgs: string[],
   validFrom: string,
 ): Promise<ActionResult<{ exportId: number }>> {
-  const uid = await ensureAdmin();
-  if (!uid) return { ok: false, error: 'Requiere rol admin.' };
+  const uid = await ensureExporter();
+  if (!uid) return { ok: false, error: 'Requiere rol admin o analista.' };
   const useOrgs = orgs.filter((o) => o === 'R050' || o === 'R040');
   if (!useOrgs.length) return { ok: false, error: 'Elige al menos una Org. de Ventas.' };
   if (!proposalIds.length) return { ok: false, error: 'Selecciona al menos una propuesta.' };
