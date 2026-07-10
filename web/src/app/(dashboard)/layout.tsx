@@ -42,6 +42,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Mantenimiento',
     items: [
+      { href: '/empresas', label: 'Empresas', roles: ['admin'] },
       { href: '/stores', label: 'Tiendas', roles: ['admin'] },
       { href: '/fixtures', label: 'Muebles', roles: ['admin', 'visual', 'encargado'] },
       { href: '/layout', label: 'Planos', roles: ['admin', 'visual'] },
