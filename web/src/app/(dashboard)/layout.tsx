@@ -18,6 +18,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/reports', label: 'Reportes', roles: ANALYTICS },
       { href: '/rotation', label: 'Rotación', roles: ANALYTICS },
       { href: '/floor', label: 'Piso vs Almacén', roles: ANALYTICS },
+      { href: '/repuestos', label: 'Vendido vs Repuesto', roles: ANALYTICS },
       { href: '/alerts', label: 'Alertas', roles: ANALYTICS },
       { href: '/trends', label: 'Tendencias', roles: ANALYTICS },
       { href: '/monthly', label: 'Mensual', roles: ANALYTICS },
@@ -35,13 +36,15 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Prisma',
     items: [
       { href: '/price-proposals', label: 'Propuestas de precio', roles: ['admin', 'encargado', 'analista'] },
-      { href: '/price-export', label: 'Exportar a SAP', roles: ['admin'] },
+      { href: '/propuestas-resumen', label: 'Propuestas por usuario', roles: ['admin', 'analista'] },
+      { href: '/price-export', label: 'Exportar a SAP', roles: ['admin', 'analista'] },
     ],
   },
   // Mantenimiento (grupo colapsable)
   {
     label: 'Mantenimiento',
     items: [
+      { href: '/empresas', label: 'Empresas', roles: ['admin'] },
       { href: '/stores', label: 'Tiendas', roles: ['admin'] },
       { href: '/fixtures', label: 'Muebles', roles: ['admin', 'visual', 'encargado'] },
       { href: '/layout', label: 'Planos', roles: ['admin', 'visual'] },

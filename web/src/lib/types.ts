@@ -7,7 +7,15 @@ export interface Store {
   code: string;
   name: string;
   floors: number;
+  empresa_id: string | null;
   created_at: string;
+}
+
+export interface Empresa {
+  id: string;
+  nombre: string;
+  nombre_reporte: string | null;
+  codigo_sap: string | null;
 }
 
 export interface Profile {

@@ -183,31 +183,37 @@ function priceOrNull(v: unknown): number | null {
 
 export interface GenericPriceRow {
   generic_code: string;                 // CODIGO_GENERICO / Material, normalizado sin ceros
+  empresa_label: string | null;         // EMPRESA (nombre o código SAP, tal como viene en el archivo)
   pvp: number;                          // PVP vigente / Precio Vta.Público
   pvp_anterior: number | null;          // PVP_ANTERIOR (null si 0 o igual al vigente)
   fecha_cambio: string | null;          // FECHA_CAMBIO_PVP / Inicio Validez (YYYY-MM-DD)
   classification: string | null;        // CLASIFICACION (VIGENTE/OBSOLETO)
 }
 
-// Archivo "PVP Rack One" (por variante) o carga SAP (por Material). El PVP vive a
-// nivel de CODIGO_GENERICO, así que deduplicamos por genérico (todas las variantes
-// del mismo genérico comparten precio). Filas sin PVP se omiten.
+// Archivo de PVP: EMPRESA, CODIGO_GENERICO, PVP, PVP_ANTERIOR, FECHA_CAMBIO_PVP.
+// El PVP vive a nivel de (CODIGO_GENERICO, EMPRESA), así que deduplicamos por ese
+// par (todas las variantes del mismo genérico comparten precio dentro de una
+// empresa). Filas sin PVP se omiten.
 export function parseGenericPrices(file: ArrayBuffer): ParseResult<GenericPriceRow> {
-  const byGen = new Map<string, GenericPriceRow>();
+  const byKey = new Map<string, GenericPriceRow>();
   const errors: ParseResult<GenericPriceRow>['errors'] = [];
   readSheet(file).forEach((r, i) => {
     const gRaw = pick(r, ['codigo_generico', 'generico', 'material', 'material (generico)', 'codigo generico']);
     if (!gRaw) return; // fila sin genérico → ignorar
     const generic = normSku(gRaw);
+    const empresaRaw = pick(r, ['empresa', 'company', 'razon social', 'razón social']);
+    const empresa_label = empresaRaw != null ? String(empresaRaw).trim() : null;
     const pvp = priceOrNull(pick(r, ['pvp', 'precio vta publico', 'precio vtapublico', 'precio', 'pvp vigente']));
     if (pvp == null) return; // sin precio válido → omitir
     const ant = priceOrNull(pick(r, ['pvp_anterior', 'pvp anterior']));
     const fecha = normalizeDate(pick(r, ['fecha_cambio_pvp', 'fecha cambio pvp', 'fecha_cambio', 'inicio validez']));
     const clasif = pick(r, ['clasificacion', 'clasificación']);
     const pvp_anterior = ant != null && ant > 0 && ant !== pvp ? ant : null;
-    if (!byGen.has(generic)) {
-      byGen.set(generic, {
+    const key = `${generic}|${empresa_label ?? ''}`;
+    if (!byKey.has(key)) {
+      byKey.set(key, {
         generic_code: generic,
+        empresa_label,
         pvp,
         pvp_anterior,
         fecha_cambio: fecha,
@@ -215,7 +221,7 @@ export function parseGenericPrices(file: ArrayBuffer): ParseResult<GenericPriceR
       });
     }
   });
-  return { rows: [...byGen.values()], errors };
+  return { rows: [...byKey.values()], errors };
 }
 
 export interface SalesDailyRow {

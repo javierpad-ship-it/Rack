@@ -17,7 +17,7 @@ android {
         // En CI se pasa VERSION_CODE = número de corrida (siempre incremental);
         // localmente cae al default.
         versionCode = (project.findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 3
-        versionName = "0.1.1"
+        versionName = "0.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Configurar en local.properties / CI; se leen vía BuildConfig.

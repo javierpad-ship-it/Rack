@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await session.auth.getUser();
   if (!user) return new Response('No autenticado', { status: 401 });
   const { data: profile } = await session.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return new Response('Requiere rol admin', { status: 403 });
+  if (profile?.role !== 'admin' && profile?.role !== 'analista')
+    return new Response('Requiere rol admin o analista', { status: 403 });
 
   const admin = createAdminClient();
   const { data: exp, error: eErr } = await admin
