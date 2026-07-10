@@ -25,7 +25,18 @@ const NAV_SECTIONS: NavSection[] = [
   },
   // Carga de datos
   {
-    items: [{ href: '/import', label: 'Importar', roles: ['admin'] }],
+    items: [
+      { href: '/import', label: 'Importar', roles: ['admin'] },
+      { href: '/precios', label: 'Importar precios (PVP)', roles: ['admin'] },
+    ],
+  },
+  // Prisma: propuestas de precio (nace en la app de campo)
+  {
+    label: 'Prisma',
+    items: [
+      { href: '/price-proposals', label: 'Propuestas de precio', roles: ['admin', 'encargado', 'analista'] },
+      { href: '/price-export', label: 'Exportar a SAP', roles: ['admin'] },
+    ],
   },
   // Mantenimiento (grupo colapsable)
   {
@@ -38,6 +49,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/calendar', label: 'Calendario', roles: ['admin'] },
       { href: '/store-aliases', label: 'Mapeo de tiendas', roles: ['admin'] },
       { href: '/users', label: 'Usuarios', roles: ['admin'] },
+      { href: '/users-prisma', label: 'Usuarios Prisma', roles: ['admin'] },
     ],
   },
 ];

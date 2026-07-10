@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { getSelectedStoreId, type PrismaStore } from '@/lib/store';
+import { assertPasswordFresh } from '@/lib/requirePasswordFresh';
 import StorePicker from './StorePicker';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TiendaPage() {
+  await assertPasswordFresh();
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: stores } = await supabase.rpc('my_stores');
