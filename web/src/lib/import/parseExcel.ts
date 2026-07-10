@@ -171,6 +171,53 @@ function num(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Precio: como num() pero devuelve null cuando falta ('-', vacío, no numérico).
+function priceOrNull(v: unknown): number | null {
+  if (v == null) return null;
+  const raw = String(v).trim();
+  if (raw === '' || raw === '-') return null;
+  const s = raw.replace(/\s/g, '').replace(/%/g, '');
+  const n = Number(s.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+export interface GenericPriceRow {
+  generic_code: string;                 // CODIGO_GENERICO / Material, normalizado sin ceros
+  pvp: number;                          // PVP vigente / Precio Vta.Público
+  pvp_anterior: number | null;          // PVP_ANTERIOR (null si 0 o igual al vigente)
+  fecha_cambio: string | null;          // FECHA_CAMBIO_PVP / Inicio Validez (YYYY-MM-DD)
+  classification: string | null;        // CLASIFICACION (VIGENTE/OBSOLETO)
+}
+
+// Archivo "PVP Rack One" (por variante) o carga SAP (por Material). El PVP vive a
+// nivel de CODIGO_GENERICO, así que deduplicamos por genérico (todas las variantes
+// del mismo genérico comparten precio). Filas sin PVP se omiten.
+export function parseGenericPrices(file: ArrayBuffer): ParseResult<GenericPriceRow> {
+  const byGen = new Map<string, GenericPriceRow>();
+  const errors: ParseResult<GenericPriceRow>['errors'] = [];
+  readSheet(file).forEach((r, i) => {
+    const gRaw = pick(r, ['codigo_generico', 'generico', 'material', 'material (generico)', 'codigo generico']);
+    if (!gRaw) return; // fila sin genérico → ignorar
+    const generic = normSku(gRaw);
+    const pvp = priceOrNull(pick(r, ['pvp', 'precio vta publico', 'precio vtapublico', 'precio', 'pvp vigente']));
+    if (pvp == null) return; // sin precio válido → omitir
+    const ant = priceOrNull(pick(r, ['pvp_anterior', 'pvp anterior']));
+    const fecha = normalizeDate(pick(r, ['fecha_cambio_pvp', 'fecha cambio pvp', 'fecha_cambio', 'inicio validez']));
+    const clasif = pick(r, ['clasificacion', 'clasificación']);
+    const pvp_anterior = ant != null && ant > 0 && ant !== pvp ? ant : null;
+    if (!byGen.has(generic)) {
+      byGen.set(generic, {
+        generic_code: generic,
+        pvp,
+        pvp_anterior,
+        fecha_cambio: fecha,
+        classification: clasif != null ? String(clasif) : null,
+      });
+    }
+  });
+  return { rows: [...byGen.values()], errors };
+}
+
 export interface SalesDailyRow {
   sale_date: string;
   sku: string;

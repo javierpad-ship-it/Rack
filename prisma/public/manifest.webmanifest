@@ -1,0 +1,16 @@
+{
+  "name": "Prisma — Rack One",
+  "short_name": "Prisma",
+  "description": "Consulta de producto y propuesta de precios en tienda.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1B4D",
+  "theme_color": "#0A1B4D",
+  "lang": "es",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

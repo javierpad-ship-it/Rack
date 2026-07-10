@@ -41,6 +41,24 @@ La web Next.js vive en `web/` y apunta a Supabase Cloud por variables de entorno
 4. Deploy. Cuando quede *healthy*, **Settings > Networking > Generate Domain** para obtener la URL
    pública. Cada push a la rama conectada redeploya automáticamente.
 
+## 2b. Prisma — app instalable (Railway)
+
+La PWA de consulta/propuesta de precios vive en `prisma/` y usa la **misma base Supabase** que Rack One.
+Es un servicio Railway aparte, mismo patrón que la web:
+
+1. Railway → **New Service > Deploy from GitHub repo** (el mismo repo; elegir la rama de Prisma).
+2. Service > **Settings > Root Directory = `prisma`**. Nixpacks autodetecta Next.js; build/start ya están en
+   `prisma/railway.json` (`next build` + `next start -p $PORT`).
+3. **Variables** (las mismas que Rack One, apuntan a la base "Rack one"):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (solo server-side)
+4. Deploy → **Settings > Networking > Generate Domain**. Esa URL (HTTPS) es instalable: en Chrome Android
+   “Añadir a pantalla de inicio”. Cada push a la rama redeploya.
+
+> **Importar precios:** en la web de Rack One (Railway), entrar a **`/precios`** (rol admin), subir el export
+> `PVP…csv`, elegir R050/R040/ambas e importar. Puebla `generic_prices` (historial por genérico y Org).
+
 ## 3. App Android (APK por CI)
 
 Railway no compila ni hospeda apps Android. El APK lo genera **GitHub Actions** (sin PC):

@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Prisma — Boceto (Rack One)</title>
+<meta name="description" content="Mockup clickable de Prisma: consulta de producto y propuesta de precios en tienda."/>
+<link rel="manifest" href="./manifest.webmanifest"/>
+<meta name="theme-color" content="#0A1B4D"/>
+<link rel="icon" href="./icon.svg"/>
+<link rel="apple-touch-icon" href="./icon.svg"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Prisma"/>
+<style>
+:root{
+  --navy:#0A1B4D; --royal:#1E5BFF; --blue:#2563EB; --cyan:#38BDF8;
+  --ink:#0E1726; --muted:#5A6B8C; --paper:#E9EEF8; --card:#FFFFFF; --card-2:#F4F7FC;
+  --line:#D8E0F0; --ok:#15803D; --ok-bg:#E4F6EA; --warn:#B45309; --warn-bg:#FBEFDD;
+  --bad:#B91C1C; --bad-bg:#FBE6E6; --pend:#5B6B8C; --pend-bg:#EAEEF6;
+  --shadow:0 24px 60px -24px rgba(10,27,77,.45);
+  --r:18px;
+  --font: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#E9EEFB; --muted:#93A2C6; --paper:#050A18; --card:#0D1730; --card-2:#111E3D;
+    --line:#243356; --ok:#34D399; --ok-bg:#0E2A22; --warn:#FBBF24; --warn-bg:#2C2109;
+    --bad:#F87171; --bad-bg:#2B1113; --pend:#93A2C6; --pend-bg:#182545;
+    --shadow:0 24px 60px -20px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="light"]{
+  --ink:#0E1726; --muted:#5A6B8C; --paper:#E9EEF8; --card:#FFFFFF; --card-2:#F4F7FC;
+  --line:#D8E0F0; --ok:#15803D; --ok-bg:#E4F6EA; --warn:#B45309; --warn-bg:#FBEFDD;
+  --bad:#B91C1C; --bad-bg:#FBE6E6; --pend:#5B6B8C; --pend-bg:#EAEEF6;
+  --shadow:0 24px 60px -24px rgba(10,27,77,.45);
+}
+:root[data-theme="dark"]{
+  --ink:#E9EEFB; --muted:#93A2C6; --paper:#050A18; --card:#0D1730; --card-2:#111E3D;
+  --line:#243356; --ok:#34D399; --ok-bg:#0E2A22; --warn:#FBBF24; --warn-bg:#2C2109;
+  --bad:#F87171; --bad-bg:#2B1113; --pend:#93A2C6; --pend-bg:#182545;
+  --shadow:0 24px 60px -20px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font); color:var(--ink);
+  background:
+    radial-gradient(1200px 700px at 15% -10%, rgba(30,91,255,.18), transparent 60%),
+    radial-gradient(1000px 700px at 110% 10%, rgba(56,189,248,.14), transparent 55%),
+    var(--paper);
+  min-height:100vh; -webkit-font-smoothing:antialiased; line-height:1.45;
+}
+button{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- demo chrome ---------- */
+.stage{max-width:1120px;margin:0 auto;padding:22px 18px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.wordmark{display:flex;align-items:center;gap:12px}
+.wordmark img{width:40px;height:40px;border-radius:11px;box-shadow:0 6px 18px -8px rgba(10,27,77,.6)}
+.wordmark b{font-size:20px;letter-spacing:.14em;font-weight:800;color:var(--ink)}
+.wordmark span{display:block;font-size:10px;letter-spacing:.34em;color:var(--royal);font-weight:700;margin-top:1px}
+.demo-note{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:4px}
+.seg button{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--royal);color:#fff;box-shadow:0 6px 16px -8px var(--royal)}
+.theme-btn{border:1px solid var(--line);background:var(--card);color:var(--muted);width:38px;height:38px;border-radius:11px;cursor:pointer;font-size:16px}
+
+.views{display:grid}
+.view{display:none}
+.view.on{display:block}
+
+/* ---------- phone ---------- */
+.phone-wrap{display:flex;justify-content:center}
+.phone{
+  width:400px;max-width:100%;background:var(--card);border-radius:44px;
+  border:1px solid var(--line); box-shadow:var(--shadow); overflow:hidden;
+  position:relative; height:812px; display:flex; flex-direction:column;
+}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:26px;background:var(--navy);border-radius:0 0 16px 16px;z-index:6}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+.screen.on{display:flex}
+.screen::-webkit-scrollbar{width:0}
+
+/* generic app header */
+.appbar{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var(--navy),#0c2160);color:#fff;padding:38px 18px 14px;display:flex;align-items:center;gap:10px}
+.appbar .back{border:0;background:rgba(255,255,255,.12);color:#fff;width:34px;height:34px;border-radius:10px;font-size:17px;cursor:pointer;flex:none}
+.appbar h2{margin:0;font-size:16px;font-weight:700;letter-spacing:.01em}
+.appbar .sub{font-size:11px;color:#9fb4ff;margin-top:1px}
+.store-chip{margin-left:auto;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.body{padding:16px 16px 96px;display:flex;flex-direction:column;gap:14px}
+
+/* cards & bits */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.card.tint{background:var(--card-2)}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.muted{color:var(--muted)}
+.big{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.kpi{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+.kpi .n{font-size:22px;font-weight:800}
+.kpi .l{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.divider{height:1px;background:var(--line);margin:2px 0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:14px 16px;font-size:15px;font-weight:800;cursor:pointer;width:100%}
+.btn.primary{background:linear-gradient(180deg,var(--royal),#1746cf);color:#fff;box-shadow:0 12px 24px -12px var(--royal)}
+.btn.ghost{background:var(--card-2);color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:9px 12px;font-size:13px;border-radius:11px;width:auto}
+.btn:active{transform:translateY(1px)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.pend{background:var(--pend-bg);color:var(--pend)}
+.pill.vig{background:rgba(30,91,255,.12);color:var(--royal)}
+
+label.field{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.input{display:flex;align-items:center;gap:8px;background:var(--card-2);border:1px solid var(--line);border-radius:13px;padding:0 12px}
+.input input{border:0;background:transparent;color:var(--ink);font-size:16px;padding:14px 0;width:100%;outline:none}
+.input .eye{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;padding:6px}
+.link{background:none;border:0;color:var(--royal);font-weight:700;font-size:13px;cursor:pointer;padding:0}
+
+/* login */
+.login{background:linear-gradient(170deg,var(--navy),#0b1f5c 55%,#0a1738);color:#fff;height:100%;padding:0}
+.login .inner{padding:70px 26px 26px;display:flex;flex-direction:column;gap:16px;min-height:100%}
+.login .brand{display:flex;flex-direction:column;align-items:center;gap:12px;margin:22px 0 8px}
+.login .brand img{width:88px;height:88px;border-radius:24px;box-shadow:0 20px 40px -16px rgba(0,0,0,.7)}
+.login .brand .n{font-size:30px;letter-spacing:.2em;font-weight:800}
+.login .brand .s{font-size:11px;letter-spacing:.42em;color:var(--cyan);font-weight:700}
+.login .field{color:#c9d6ff}
+.login .input{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}
+.login .input input{color:#fff}
+.login .input input::placeholder{color:#8fa3d8}
+.login .input .eye{color:#b9c7f0}
+.login .hint{font-size:12px;color:#93a6d8;text-align:center;line-height:1.5}
+.login .notice{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);color:#d6f0ff;border-radius:13px;padding:11px 13px;font-size:12.5px;display:none}
+.login .notice.on{display:block}
+
+/* store select */
+.store-list{display:flex;flex-direction:column;gap:10px}
+.store-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;width:100%;color:inherit}
+.store-item.sel{border-color:var(--royal);box-shadow:0 0 0 2px rgba(30,91,255,.18)}
+.store-item .ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,var(--royal),#1746cf);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.store-item .nm{font-weight:700}
+.store-item .cd{font-size:12px;color:var(--muted)}
+.store-item .rad{margin-left:auto;width:20px;height:20px;border-radius:50%;border:2px solid var(--line)}
+.store-item.sel .rad{border-color:var(--royal);background:radial-gradient(circle,var(--royal) 42%,transparent 46%)}
+
+/* scanner */
+.scan-view{margin:2px 0 4px;height:300px;border-radius:20px;background:radial-gradient(120% 120% at 50% 10%,#12224e,#060d22);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.reticle{width:210px;height:130px;border-radius:14px;position:relative}
+.reticle::before,.reticle::after{content:"";position:absolute;width:34px;height:34px;border:3px solid var(--cyan)}
+.reticle::before{top:0;left:0;border-right:0;border-bottom:0;border-radius:12px 0 0 0}
+.reticle::after{bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 12px 0}
+.corner{position:absolute;width:34px;height:34px;border:3px solid var(--cyan)}
+.corner.tr{top:0;right:0;border-left:0;border-bottom:0;border-radius:0 12px 0 0}
+.corner.bl{bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 12px}
+.laser{position:absolute;left:12px;right:12px;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);top:12px;box-shadow:0 0 12px var(--cyan);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:12px}50%{top:116px}}
+.scan-hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:#cfe0ff;font-size:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+
+/* ficha */
+.prodhead{display:flex;flex-direction:column;gap:4px}
+.codes{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.code{font-size:11px;font-weight:700;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:3px 7px;color:var(--muted)}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.price-main{grid-column:1 / -1;display:flex;align-items:flex-end;justify-content:space-between}
+.price-main .v{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.mini{font-size:12px;color:var(--muted)}
+.spark{height:44px;width:100%;display:block}
+.acc{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.acc+.acc{margin-top:8px}
+.acc-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:var(--card-2);font-weight:800}
+.acc-head .sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+.acc-head .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.acc-head .car{transition:transform .18s}
+.acc.open .acc-head .car{transform:rotate(90deg)}
+.acc-body{display:none;padding:2px 6px 8px}
+.acc.open .acc-body{display:block}
+table.matrix{width:100%;border-collapse:collapse;font-size:13px}
+table.matrix th,table.matrix td{padding:8px 6px;text-align:right}
+table.matrix th:first-child,table.matrix td:first-child{text-align:left;font-weight:700}
+table.matrix thead th{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+table.matrix tbody tr+tr td{border-top:1px solid var(--line)}
+table.matrix tr.hit td{background:rgba(30,91,255,.09)}
+table.matrix tr.hit td:first-child{color:var(--royal)}
+.tag-hit{font-size:9px;font-weight:800;color:#fff;background:var(--royal);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+
+/* tab bar */
+.tabbar{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom));z-index:6}
+.tabbar button{flex:1;border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;position:relative}
+.tabbar button.on{color:var(--royal)}
+.tabbar .ic{font-size:19px;line-height:1}
+.tabbar .badge{position:absolute;top:2px;right:calc(50% - 22px);background:var(--bad);color:#fff;font-size:9px;font-weight:800;border-radius:999px;padding:1px 5px}
+
+/* proposals list */
+.prop{display:flex;flex-direction:column;gap:6px;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.prop .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.prop .mv{font-weight:800}
+.prop .arw{color:var(--muted)}
+.prop .new-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);display:inline-block}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--card);padding:12px 18px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:0 12px 30px -10px rgba(0,0,0,.5)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- back-office ---------- */
+.bo{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
+.bo-top{display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--navy),#0c2160);color:#fff;flex-wrap:wrap}
+.bo-top h2{margin:0;font-size:17px}
+.bo-top .sub{font-size:12px;color:#9fb4ff}
+.bo-tabs{display:flex;gap:6px;margin-left:auto;background:rgba(255,255,255,.1);padding:4px;border-radius:12px}
+.bo-tabs button{border:0;background:transparent;color:#c9d6ff;font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer}
+.bo-tabs button.on{background:#fff;color:var(--navy)}
+.bo-panel{display:none;padding:18px 20px}
+.bo-panel.on{display:block}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.select{background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:13px;font-weight:700;color:var(--ink)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table.grid{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+table.grid th,table.grid td{padding:11px 12px;text-align:right;white-space:nowrap}
+table.grid th:first-child,table.grid td:first-child,table.grid th:nth-child(2),table.grid td:nth-child(2){text-align:left}
+table.grid thead th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--card-2);border-bottom:1px solid var(--line);position:sticky;top:0}
+table.grid tbody tr+tr td{border-top:1px solid var(--line)}
+table.grid.wide{min-width:1040px}
+table.grid td.lft,table.grid th.lft{text-align:left}
+table.grid .grp{border-left:1px solid var(--line)}
+table.grid thead th.scope{font-size:10px;color:var(--royal);letter-spacing:.1em}
+.acts{display:flex;gap:6px;justify-content:flex-end}
+.iabtn{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;color:var(--ink)}
+.iabtn.ok{border-color:var(--ok);color:var(--ok)}
+.iabtn.bad{border-color:var(--bad);color:var(--bad)}
+.iabtn.blue{border-color:var(--royal);color:var(--royal)}
+.irp-up{color:var(--ok);font-weight:800}
+.irp-dn{color:var(--warn);font-weight:800}
+.export-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.orgbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.checkline{display:flex;align-items:center;gap:9px;font-weight:700}
+.checkline input{width:17px;height:17px;accent-color:var(--royal)}
+.datein{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:700;color:var(--ink)}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.footer-note{max-width:1120px;margin:22px auto 0;color:var(--muted);font-size:12.5px;text-align:center;line-height:1.6}
+.install-tip{display:none}
+@media (max-width:520px){
+  .phone{height:760px;border-radius:34px}
+  .stage{padding:16px 12px 48px}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="topbar">
+    <div class="wordmark">
+      <img src="./icon.svg" alt=""/>
+      <div><b>PRISMA</b><span>RACK ONE</span></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="seg" role="tablist" aria-label="Vista">
+        <button id="tabApp" class="on" onclick="showView('app')">App (celular)</button>
+        <button id="tabBo" onclick="showView('bo')">Back-office</button>
+      </div>
+      <button class="theme-btn" title="Cambiar tema" onclick="toggleTheme()" aria-label="Cambiar tema">◐</button>
+    </div>
+  </div>
+  <p class="demo-note">Boceto navegable con datos de ejemplo — sin conexión a datos reales. Toca los botones para recorrer el flujo.</p>
+
+  <div class="views">
+    <!-- ============ APP ============ -->
+    <section id="view-app" class="view on">
+      <div class="phone-wrap">
+        <div class="phone" id="phone">
+          <div class="notch"></div>
+
+          <!-- 1. LOGIN -->
+          <div class="screen on" data-screen="login">
+            <div class="login">
+              <div class="inner">
+                <div class="brand">
+                  <img src="./icon.svg" alt="Prisma"/>
+                  <div class="n">PRISMA</div>
+                  <div class="s">RACK ONE</div>
+                </div>
+                <div>
+                  <label class="field" for="dni">DNI</label>
+                  <div class="input"><input id="dni" inputmode="numeric" placeholder="Tu número de DNI" value="45872103"/></div>
+                </div>
+                <div>
+                  <label class="field" for="pass">Clave</label>
+                  <div class="input">
+                    <input id="pass" type="password" placeholder="Tu clave" value="45872103"/>
+                    <button class="eye" onclick="togglePass()" aria-label="Mostrar u ocultar clave">👁</button>
+                  </div>
+                </div>
+                <button class="btn primary" onclick="go('store')">Ingresar</button>
+                <button class="link" style="align-self:center" onclick="document.getElementById('forgot').classList.add('on')">¿Olvidaste tu clave?</button>
+                <div class="notice" id="forgot">Acércate al <b>administrador</b> para resetearla. La dejará en <b>tu DNI</b> y te pedirá cambiarla al ingresar.</div>
+                <div style="flex:1"></div>
+                <div class="hint">Primera vez: clave = tu DNI.<br/>Te pediremos cambiarla al ingresar.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. STORE SELECT -->
+          <div class="screen" data-screen="store">
+            <div class="appbar" style="padding-top:38px">
+              <div><h2>¿En qué tienda estás?</h2><div class="sub">Hola, Javier P.</div></div>
+            </div>
+            <div class="body">
+              <div class="eyebrow">Tus tiendas asignadas</div>
+              <div class="store-list" id="storeList">
+                <button class="store-item sel" data-store="Alfonso Ugarte" onclick="pickStore(this)">
+                  <span class="ic">AU</span><span><span class="nm">Alfonso Ugarte</span><br/><span class="cd">Lima · R050</span></span><span class="rad"></span>
+                </button>
+                <button class="store-item" data-store="Mega Plaza" onclick="pickStore(this)">
+                  <span class="ic">MP</span><span><span class="nm">Mega Plaza</span><br/><span class="cd">Independencia · R050</span></span><span class="rad"></span>
+                </button>
+                <button class="store-item" data-store="Salaverry" onclick="pickStore(this)">
+                  <span class="ic">SV</span><span><span class="nm">Real Plaza Salaverry</span><br/><span class="cd">Jesús María · R040</span></span><span class="rad"></span>
+                </button>
+              </div>
+              <button class="btn primary" onclick="go('scan')">Continuar</button>
+              <p class="mini" style="text-align:center">Podrás cambiar de tienda en cualquier momento desde el chip superior.</p>
+            </div>
+          </div>
+
+          <!-- 3. SCANNER -->
+          <div class="screen" data-screen="scan">
+            <div class="appbar">
+              <div><h2>Escanear producto</h2><div class="sub">Código de variante</div></div>
+              <button class="store-chip" onclick="go('store')"><span id="chip1">📍 Alfonso Ugarte</span> ▾</button>
+            </div>
+            <div class="body">
+              <div class="scan-view">
+                <div class="reticle"><span class="corner tr"></span><span class="corner bl"></span><span class="laser"></span></div>
+                <div class="scan-hint">Apunta la cámara al código de barras</div>
+              </div>
+              <button class="btn primary" onclick="go('ficha')">⚡ Simular lectura</button>
+              <div>
+                <label class="field">o buscar manualmente</label>
+                <div class="input"><input inputmode="numeric" placeholder="Código de variante / SKU"/><button class="eye" onclick="go('ficha')">🔍</button></div>
+              </div>
+              <div>
+                <div class="eyebrow" style="margin-bottom:8px">Recientes</div>
+                <div class="chips">
+                  <button class="chip" onclick="go('ficha')">35317001</button>
+                  <button class="chip" onclick="go('ficha')">125151022</button>
+                  <button class="chip" onclick="go('ficha')">29328002</button>
+                </div>
+              </div>
+            </div>
+            <nav class="tabbar" data-tabs>
+              <button class="on" onclick="go('scan')"><span class="ic">⚃</span>Escanear</button>
+              <button onclick="go('propuestas')"><span class="ic">✎</span>Mis propuestas<span class="badge">2</span></button>
+              <button onclick="go('store')"><span class="ic">📍</span>Tienda</button>
+            </nav>
+          </div>
+
+          <!-- 4. FICHA -->
+          <div class="screen" data-screen="ficha">
+            <div class="appbar">
+              <button class="back" onclick="go('scan')">←</button>
+              <div><h2>Sandalia Vera</h2><div class="sub">2CF221 · Dama · Calzado</div></div>
+              <button class="store-chip" onclick="go('store')"><span id="chip2">📍 A. Ugarte</span> ▾</button>
+            </div>
+            <div class="body">
+              <div class="card">
+                <div class="prodhead">
+                  <div class="row"><span class="eyebrow">Producto</span><span class="pill vig">VIGENTE</span></div>
+                  <div style="font-weight:800;font-size:17px">Sandalia Vera — Azul / M</div>
+                  <div class="codes">
+                    <span class="code">Genérico 1000035317</span>
+                    <span class="code">Artículo 2CF221</span>
+                    <span class="code">Variante 35317001</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="price-grid">
+                  <div class="price-main">
+                    <div><div class="eyebrow">PVP vigente</div><div class="v tnum">S/ 129.90</div></div>
+                    <button class="btn ghost sm" onclick="toggleSpark()">Ver evolución ▾</button>
+                  </div>
+                  <div class="kpi"><div class="l">PVP anterior</div><div class="n tnum" style="font-size:18px">S/ 149.90</div></div>
+                  <div class="kpi"><div class="l">Último cambio</div><div class="n tnum" style="font-size:18px">22/01/26</div></div>
+                  <div id="sparkBox" style="grid-column:1/-1;display:none">
+                    <div class="divider" style="margin:6px 0 10px"></div>
+                    <div class="mini" style="margin-bottom:6px">Evolución del PVP (últimos cambios)</div>
+                    <svg class="spark" viewBox="0 0 300 44" preserveAspectRatio="none" aria-hidden="true">
+                      <polyline fill="none" stroke="#1E5BFF" stroke-width="2.5" points="0,8 75,8 75,20 150,20 150,30 225,30 225,14 300,14"/>
+                    </svg>
+                    <div class="row mini"><span>169.90</span><span>149.90</span><span>129.90</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="eyebrow" style="margin-bottom:10px">Variante escaneada — en esta tienda</div>
+                <div class="kpi-row">
+                  <div class="kpi"><div class="n tnum">3</div><div class="l">Stock (Stk Fin)</div></div>
+                  <div class="kpi"><div class="n tnum">2 · 1</div><div class="l">Piso · Almacén</div></div>
+                  <div class="kpi"><div class="n tnum">5</div><div class="l">Vendido 30 d</div></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="eyebrow" style="margin:2px 2px 8px">Detalle del genérico (por color)</div>
+                <div class="acc open" id="acc-azul">
+                  <div class="acc-head" onclick="toggleAcc('acc-azul')">
+                    <span class="sw" style="background:#3b6fd6"></span> Azul
+                    <span class="cnt">7 u.</span><span class="car">›</span>
+                  </div>
+                  <div class="acc-body">
+                    <table class="matrix">
+                      <thead><tr><th>Talla</th><th>Stock</th><th>Alm</th><th>Piso</th><th>Vta 30d</th></tr></thead>
+                      <tbody class="tnum">
+                        <tr><td>S</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+                        <tr class="hit"><td>M <span class="tag-hit">ESCANEADA</span></td><td>3</td><td>1</td><td>2</td><td>5</td></tr>
+                        <tr><td>L</td><td>4</td><td>2</td><td>2</td><td>3</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="acc" id="acc-negro">
+                  <div class="acc-head" onclick="toggleAcc('acc-negro')">
+                    <span class="sw" style="background:#1c2540"></span> Negro
+                    <span class="cnt">3 u.</span><span class="car">›</span>
+                  </div>
+                  <div class="acc-body">
+                    <table class="matrix">
+                      <thead><tr><th>Talla</th><th>Stock</th><th>Alm</th><th>Piso</th><th>Vta 30d</th></tr></thead>
+                      <tbody class="tnum">
+                        <tr><td>S</td><td>2</td><td>1</td><td>1</td><td>4</td></tr>
+                        <tr><td>M</td><td>0</td><td>0</td><td>0</td><td>2</td></tr>
+                        <tr><td>L</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn primary" onclick="go('proponer')">Proponer nuevo precio</button>
+              <button class="btn ghost" onclick="go('scan')">Nueva consulta</button>
+            </div>
+            <nav class="tabbar" data-tabs>
+              <button class="on" onclick="go('scan')"><span class="ic">⚃</span>Escanear</button>
+              <button onclick="go('propuestas')"><span class="ic">✎</span>Mis propuestas<span class="badge">2</span></button>
+              <button onclick="go('store')"><span class="ic">📍</span>Tienda</button>
+            </nav>
+          </div>
+
+          <!-- 5. PROPONER -->
+          <div class="screen" data-screen="proponer">
+            <div class="appbar">
+              <button class="back" onclick="go('ficha')">←</button>
+              <div><h2>Proponer precio</h2><div class="sub">Genérico 1000035317</div></div>
+            </div>
+            <div class="body">
+              <div class="card tint">
+                <div class="row"><span class="muted">Producto</span><b>Sandalia Vera</b></div>
+                <div class="row"><span class="muted">PVP vigente</span><b class="tnum">S/ 129.90</b></div>
+                <div class="row"><span class="muted">Org. de Ventas</span><span class="pill vig" id="orgAuto">R050 (auto)</span></div>
+              </div>
+              <div>
+                <label class="field" for="newp">Nuevo PVP propuesto</label>
+                <div class="input"><span class="muted" style="font-weight:800">S/</span><input id="newp" inputmode="decimal" placeholder="0.00" value="99.90"/></div>
+              </div>
+              <div>
+                <label class="field" for="motivo">Motivo</label>
+                <div class="input"><input id="motivo" placeholder="Ej. baja rotación, competencia, liquidación"/></div>
+              </div>
+              <div class="card tint">
+                <div class="row"><span class="muted">Reducción</span><b class="tnum" style="color:var(--warn)">−23% · S/ 30.00</b></div>
+                <div class="mini">La revisará el responsable de línea (Calzado Dama) en Rack One.</div>
+              </div>
+              <button class="btn primary" onclick="sendProposal()">Enviar propuesta</button>
+              <button class="btn ghost" onclick="go('ficha')">Cancelar</button>
+            </div>
+          </div>
+
+          <!-- 6. MIS PROPUESTAS -->
+          <div class="screen" data-screen="propuestas">
+            <div class="appbar">
+              <div><h2>Mis propuestas</h2><div class="sub">Cómo se procesaron tus pedidos</div></div>
+              <span class="store-chip" style="cursor:default">🔔 2 nuevas</span>
+            </div>
+            <div class="body">
+              <div class="prop">
+                <div class="top"><span class="mv">Sandalia Vera</span><span class="pill ok">Aceptada</span></div>
+                <div class="row mini"><span>1000035317 · <span class="tnum">129.90 <span class="arw">→</span> 99.90</span></span><span><span class="new-dot"></span> 08/07</span></div>
+              </div>
+              <div class="prop">
+                <div class="top"><span class="mv">Bota Andina</span><span class="pill warn">Contrapropuesta</span></div>
+                <div class="row mini"><span>1000098370 · <span class="tnum">59.90 <span class="arw">→</span> 49.90</span></span><span><span class="new-dot"></span> 08/07</span></div>
+                <div class="mini">Aprobado a <b class="tnum">S/ 54.90</b> — "margen mínimo de línea".</div>
+              </div>
+              <div class="prop">
+                <div class="top"><span class="mv">Zapatilla Urban</span><span class="pill pend">Pendiente</span></div>
+                <div class="row mini"><span>1000120334 · <span class="tnum">99.90 <span class="arw">→</span> 79.90</span></span><span>hoy</span></div>
+              </div>
+              <div class="prop">
+                <div class="top"><span class="mv">Correa Clásica</span><span class="pill bad">Denegada</span></div>
+                <div class="row mini"><span>1000021720 · <span class="tnum">9.90 <span class="arw">→</span> 7.90</span></span><span>05/07</span></div>
+                <div class="mini">"Margen por debajo del piso permitido."</div>
+              </div>
+            </div>
+            <nav class="tabbar" data-tabs>
+              <button onclick="go('scan')"><span class="ic">⚃</span>Escanear</button>
+              <button class="on" onclick="go('propuestas')"><span class="ic">✎</span>Mis propuestas</button>
+              <button onclick="go('store')"><span class="ic">📍</span>Tienda</button>
+            </nav>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BACK-OFFICE ============ -->
+    <section id="view-bo" class="view">
+      <div class="bo">
+        <div class="bo-top">
+          <div><h2>Rack One · Precios</h2><div class="sub">Flujo de propuestas desde Prisma</div></div>
+          <div class="bo-tabs">
+            <button class="on" id="boT1" onclick="showBo('prop')">Propuestas</button>
+            <button id="boT2" onclick="showBo('export')">Exportar a SAP</button>
+            <button id="boT3" onclick="showBo('users')">Usuarios Prisma</button>
+          </div>
+        </div>
+
+        <!-- Bandeja -->
+        <div class="bo-panel on" data-bo="prop">
+          <div class="filters">
+            <select class="select"><option>Línea: Calzado Dama</option><option>Línea: Calzado Caballero</option><option>Todas las líneas</option></select>
+            <select class="select"><option>Estado: Pendientes</option><option>Todos</option><option>Aceptadas</option></select>
+            <span class="note" style="margin:0;align-self:center">Ves solo las propuestas de <b>tus líneas</b> (campo <code>resp</code>).</span>
+          </div>
+          <div class="table-wrap">
+            <table class="grid wide">
+              <thead>
+                <tr>
+                  <th class="lft">Genérico</th><th class="lft">Producto</th><th class="lft">Solicitante</th><th class="lft">Tienda</th>
+                  <th>PVP vig.</th><th>Propuesto</th><th>Costo prom.</th>
+                  <th class="scope grp">Stk tienda</th><th class="scope">Rot. tienda</th>
+                  <th class="scope grp">Stk cadena</th><th class="scope">Rot. cadena</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="tnum" id="propBody">
+                <tr>
+                  <td class="lft">1000035317</td><td class="lft">Sandalia Vera</td><td class="lft">Javier P.</td><td class="lft">Alfonso Ugarte</td>
+                  <td>129.90</td><td>99.90</td><td>38.00</td>
+                  <td class="grp">3</td><td class="irp-dn">43%</td><td class="grp">41</td><td class="irp-dn">38%</td>
+                  <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
+                </tr>
+                <tr>
+                  <td class="lft">1000098370</td><td class="lft">Bota Andina</td><td class="lft">M. Flores</td><td class="lft">Mega Plaza</td>
+                  <td>59.90</td><td>49.90</td><td>22.10</td>
+                  <td class="grp">5</td><td class="irp-dn">28%</td><td class="grp">63</td><td class="irp-up">46%</td>
+                  <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
+                </tr>
+                <tr>
+                  <td class="lft">1000120334</td><td class="lft">Zapatilla Urban</td><td class="lft">L. Quispe</td><td class="lft">Salaverry</td>
+                  <td>99.90</td><td>79.90</td><td>41.50</td>
+                  <td class="grp">2</td><td class="irp-up">61%</td><td class="grp">58</td><td class="irp-up">52%</td>
+                  <td><div class="acts"><button class="iabtn ok" onclick="decide(this,'ok')">Aceptar</button><button class="iabtn bad" onclick="decide(this,'bad')">Denegar</button><button class="iabtn blue" onclick="counter(this)">Contra…</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note"><b>Rotación = IRP</b> de Rack One = ventas(und) / (ventas + stock) × 100, calculado por alcance
+          (tienda del solicitante y toda la cadena). <b>Stk</b> = stock del genérico en cada alcance. Al decidir, le llega la alerta al solicitante en Prisma.</p>
+        </div>
+
+        <!-- Export -->
+        <div class="bo-panel" data-bo="export">
+          <div class="export-head">
+            <div class="orgbox">
+              <span class="eyebrow">Aplicar a Org. de Ventas:</span>
+              <label class="checkline"><input type="checkbox" checked/> R050</label>
+              <label class="checkline"><input type="checkbox"/> R040</label>
+            </div>
+            <div class="orgbox"><span class="eyebrow">Inicio validez</span><span class="datein tnum">09.07.2026</span><span class="muted">Fin</span><span class="datein tnum">31.12.9999</span></div>
+            <button class="btn primary sm" style="margin-left:auto" onclick="genSap()">Generar archivo SAP</button>
+          </div>
+          <div class="eyebrow" style="margin-bottom:8px">Aceptadas sin exportar</div>
+          <div class="table-wrap">
+            <table class="grid">
+              <thead><tr>
+                <th>✓</th><th>Material (Genérico)</th><th>Org.Ventas</th><th>Canal</th><th>Inicio Validez</th><th>Fin Validez</th><th>Det.Compra</th><th>Det.Venta</th><th>Lista Var.</th><th>Selección</th><th>Precio Vta.Público</th>
+              </tr></thead>
+              <tbody class="tnum">
+                <tr><td>☑</td><td>1000098370</td><td>R050</td><td>10</td><td>09.07.2026</td><td>31.12.9999</td><td>Z1</td><td>Z1</td><td>Z1</td><td>True</td><td>54.90</td></tr>
+                <tr><td>☑</td><td>1000035317</td><td>R050</td><td>10</td><td>09.07.2026</td><td>31.12.9999</td><td>Z1</td><td>Z1</td><td>Z1</td><td>True</td><td>99.90</td></tr>
+                <tr><td>☑</td><td>1000120334</td><td>R050</td><td>10</td><td>09.07.2026</td><td>31.12.9999</td><td>Z1</td><td>Z1</td><td>Z1</td><td>True</td><td>79.90</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Estructura idéntica al archivo de carga de SAP (imagen de referencia). Marca las filas, elige R050 / R040 / ambas y la fecha de inicio; se genera el <b>.xlsx</b> para subir.</p>
+        </div>
+
+        <!-- Users -->
+        <div class="bo-panel" data-bo="users">
+          <div class="filters"><button class="btn primary sm" onclick="toast('Alta de usuario (demo)')">+ Nuevo usuario</button><span class="note" style="margin:0;align-self:center">Usuario y clave inicial = <b>DNI</b>. Reset deja la clave en el DNI.</span></div>
+          <div class="table-wrap">
+            <table class="grid">
+              <thead><tr><th>DNI</th><th>Nombre</th><th>Rol</th><th>Tiendas</th><th>Acciones</th></tr></thead>
+              <tbody>
+                <tr><td class="tnum">45872103</td><td>Javier Padilla</td><td>encargado</td><td>Alfonso Ugarte, Mega Plaza, Salaverry</td><td><div class="acts"><button class="iabtn blue" onclick="toast('Editar tiendas (demo)')">Tiendas</button><button class="iabtn" onclick="toast('Clave reseteada al DNI (demo)')">Reset clave</button></div></td></tr>
+                <tr><td class="tnum">70123456</td><td>María Flores</td><td>visual</td><td>Mega Plaza</td><td><div class="acts"><button class="iabtn blue" onclick="toast('Editar tiendas (demo)')">Tiendas</button><button class="iabtn" onclick="toast('Clave reseteada al DNI (demo)')">Reset clave</button></div></td></tr>
+                <tr><td class="tnum">09887766</td><td>Luis Quispe</td><td>operario</td><td>Salaverry</td><td><div class="acts"><button class="iabtn blue" onclick="toast('Editar tiendas (demo)')">Tiendas</button><button class="iabtn" onclick="toast('Clave reseteada al DNI (demo)')">Reset clave</button></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Mono-tienda (1 tienda) o multi-tienda (varias). Al entrar, Prisma pregunta en cuál está y permite cambiarla.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <p class="footer-note">Prisma · boceto Fase 0 — pantallas de ejemplo para validar el flujo antes de conectar los datos de Rack One.<br/>Instalable: en Chrome (Android) usa “Añadir a pantalla de inicio”.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function go(screen){
+  var phone=document.getElementById('phone');
+  phone.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on', s.dataset.screen===screen);});
+  phone.scrollTop=0;
+  var body=phone.querySelector('.screen.on .body, .screen.on .login');
+  if(body) body.scrollTop=0;
+}
+function showView(v){
+  document.getElementById('view-app').classList.toggle('on', v==='app');
+  document.getElementById('view-bo').classList.toggle('on', v==='bo');
+  document.getElementById('tabApp').classList.toggle('on', v==='app');
+  document.getElementById('tabBo').classList.toggle('on', v==='bo');
+}
+function showBo(p){
+  document.querySelectorAll('.bo-panel').forEach(function(el){el.classList.toggle('on', el.dataset.bo===p);});
+  document.getElementById('boT1').classList.toggle('on', p==='prop');
+  document.getElementById('boT2').classList.toggle('on', p==='export');
+  document.getElementById('boT3').classList.toggle('on', p==='users');
+}
+function togglePass(){
+  var p=document.getElementById('pass');
+  p.type = p.type==='password' ? 'text' : 'password';
+}
+function pickStore(el){
+  document.querySelectorAll('#storeList .store-item').forEach(function(s){s.classList.remove('sel');});
+  el.classList.add('sel');
+  var name=el.dataset.store;
+  document.getElementById('chip1').textContent='📍 '+name;
+  document.getElementById('chip2').textContent='📍 '+name.replace('Alfonso','A.');
+}
+function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
+function toggleSpark(){
+  var b=document.getElementById('sparkBox');
+  b.style.display = b.style.display==='none' ? 'block' : 'none';
+}
+function toggleTheme(){
+  var r=document.documentElement;
+  var cur=r.getAttribute('data-theme');
+  var dark=cur ? cur==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme', dark ? 'light' : 'dark');
+}
+var toastT;
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('on');},2200);
+}
+function sendProposal(){ toast('Propuesta enviada ✓'); setTimeout(function(){go('propuestas');},450); }
+function decide(btn,kind){
+  var row=btn.closest('tr');
+  var td=row.querySelector('td:last-child');
+  if(kind==='ok'){ td.innerHTML='<span class="pill ok">Aceptada</span>'; toast('Aceptada — alerta enviada a Prisma'); }
+  else { td.innerHTML='<span class="pill bad">Denegada</span>'; toast('Denegada — alerta enviada a Prisma'); }
+}
+function counter(btn){
+  var v=prompt('Contrapropuesta — nuevo PVP (S/):','54.90');
+  if(v===null) return;
+  var row=btn.closest('tr');
+  row.querySelector('td:last-child').innerHTML='<span class="pill warn">Contra S/ '+v+'</span>';
+  toast('Contrapropuesta enviada a Prisma');
+}
+function genSap(){ toast('SAP_precios_09072026.xlsx generado ✓'); }
+
+/* PWA: registra el service worker si el contexto lo permite (no en about:srcdoc/artifact) */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
