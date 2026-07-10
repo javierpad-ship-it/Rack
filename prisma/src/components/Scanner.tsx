@@ -10,63 +10,97 @@ function normSku(v: string): string {
   return /^\d+$/.test(s) ? s.replace(/^0+/, '') || '0' : s;
 }
 
-const FORMATS = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'codabar'];
+// Chrome/Android trae BarcodeDetector nativo (rápido, sin dependencias). Safari
+// e iOS no lo soportan (ver caniuse), así que hay un fallback en JS puro con
+// ZXing (@zxing/browser), cargado solo cuando hace falta.
+const NATIVE_FORMATS = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'codabar'];
+
+type Status = 'idle' | 'scanning' | 'unsupported' | 'denied';
 
 export default function Scanner() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [manual, setManual] = useState('');
-  const [status, setStatus] = useState<'idle' | 'scanning' | 'unsupported' | 'denied'>('idle');
+  const [status, setStatus] = useState<Status>('idle');
   const goneRef = useRef(false);
+  const stopRef = useRef<(() => void) | null>(null);
 
   function go(code: string) {
     const sku = normSku(code);
     if (!sku || goneRef.current) return;
     goneRef.current = true;
+    stopRef.current?.();
     router.push(`/ficha/${encodeURIComponent(sku)}`);
   }
 
   useEffect(() => {
+    let cancelled = false;
     let stream: MediaStream | null = null;
     let raf = 0;
-    let detector: any = null;
     const AnyWin = window as any;
 
-    async function start() {
-      if (!('BarcodeDetector' in AnyWin) || !navigator.mediaDevices?.getUserMedia) {
-        setStatus('unsupported');
-        return;
-      }
-      try {
-        detector = new AnyWin.BarcodeDetector({ formats: FORMATS });
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        const v = videoRef.current;
-        if (!v) return;
-        v.srcObject = stream;
-        await v.play();
-        setStatus('scanning');
-        const tick = async () => {
-          if (goneRef.current) return;
-          try {
-            const codes = await detector.detect(v);
-            if (codes && codes.length) {
-              go(codes[0].rawValue as string);
-              return;
-            }
-          } catch {
-            /* frame sin lectura */
-          }
-          raf = requestAnimationFrame(tick);
-        };
+    // Camino rápido: BarcodeDetector nativo (Chrome/Android).
+    async function startNative() {
+      const detector = new AnyWin.BarcodeDetector({ formats: NATIVE_FORMATS });
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      stopRef.current = () => stream?.getTracks().forEach((t) => t.stop());
+      const v = videoRef.current;
+      if (!v || cancelled) return;
+      v.srcObject = stream;
+      await v.play();
+      if (cancelled) return;
+      setStatus('scanning');
+      const tick = async () => {
+        if (goneRef.current || cancelled) return;
+        try {
+          const codes = await detector.detect(v);
+          if (codes && codes.length) { go(codes[0].rawValue as string); return; }
+        } catch {
+          /* frame sin lectura */
+        }
         raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }
+
+    // Fallback: ZXing en JS puro — funciona en Safari/iOS (sin BarcodeDetector).
+    async function startZXing() {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      const reader = new BrowserMultiFormatReader();
+      const v = videoRef.current;
+      if (!v || cancelled) return;
+      const controls = await reader.decodeFromConstraints(
+        { video: { facingMode: 'environment' } },
+        v,
+        (result) => {
+          if (result && !goneRef.current) go(result.getText());
+        },
+      );
+      if (cancelled) { controls.stop(); return; }
+      stopRef.current = () => controls.stop();
+      setStatus('scanning');
+    }
+
+    async function start() {
+      try {
+        if ('BarcodeDetector' in AnyWin) {
+          await startNative();
+        } else if (navigator.mediaDevices) {
+          await startZXing();
+        } else {
+          setStatus('unsupported');
+        }
       } catch {
         setStatus('denied');
       }
     }
     start();
+
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
+      stopRef.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -74,7 +108,7 @@ export default function Scanner() {
   return (
     <>
       <div className="scan-view">
-        <video ref={videoRef} muted playsInline />
+        <video ref={videoRef} muted playsInline autoPlay />
         <div className="reticle">
           <span className="corner tl" /><span className="corner tr" />
           <span className="corner bl" /><span className="corner br" />
