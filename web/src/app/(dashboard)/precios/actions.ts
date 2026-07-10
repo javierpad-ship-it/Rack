@@ -21,33 +21,54 @@ const PREV_FROM = '2000-01-01';
 
 const CHUNK = 500;
 
-// Importa precios por (genérico, Org). Siembra el vigente y, si existe, el anterior.
+function normLabel(s: string): string {
+  return s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Importa precios por (genérico, EMPRESA). Siembra el vigente y, si existe, el
+// anterior. Filas cuya EMPRESA no matchea ninguna empresa dada de alta (por
+// nombre, nombre_reporte o código SAP) se reportan como `unmatched` y no se
+// cargan, para que el admin las revise en Mantenimiento → Empresas.
 export async function importGenericPrices(
   rows: GenericPriceRow[],
-  orgs: string[],
-): Promise<ActionResult<{ generics: number; priceRows: number }>> {
+): Promise<ActionResult<{ generics: number; priceRows: number; unmatched: string[] }>> {
   const uid = await ensureAdmin();
   if (!uid) return { ok: false, error: 'Requiere rol admin.' };
-  const useOrgs = (orgs?.length ? orgs : ['R050', 'R040']).filter((o) => o === 'R050' || o === 'R040');
-  if (!useOrgs.length) return { ok: false, error: 'Elige al menos una Org. de Ventas.' };
 
-  type PriceInsert = { generic_code: string; sales_org: string; pvp: number; valid_from: string; source: string };
-  const out: PriceInsert[] = [];
-  for (const r of rows) {
-    if (!(r.pvp > 0)) continue;
-    for (const org of useOrgs) {
-      out.push({ generic_code: r.generic_code, sales_org: org, pvp: r.pvp, valid_from: r.fecha_cambio ?? DEFAULT_FROM, source: 'pvp_rackone' });
-      if (r.pvp_anterior != null && r.pvp_anterior > 0 && r.pvp_anterior !== r.pvp) {
-        out.push({ generic_code: r.generic_code, sales_org: org, pvp: r.pvp_anterior, valid_from: PREV_FROM, source: 'pvp_rackone' });
-      }
+  const admin = createAdminClient();
+  const { data: empresas, error: eErr } = await admin
+    .from('empresas')
+    .select('id, nombre, nombre_reporte, codigo_sap');
+  if (eErr) return { ok: false, error: eErr.message };
+
+  const map = new Map<string, string>(); // etiqueta normalizada -> empresa_id
+  for (const e of empresas ?? []) {
+    for (const label of [e.nombre, e.nombre_reporte, e.codigo_sap]) {
+      if (label) map.set(normLabel(String(label)), e.id as string);
     }
   }
 
-  const admin = createAdminClient();
+  type PriceInsert = { generic_code: string; empresa_id: string; pvp: number; valid_from: string; source: string };
+  const out: PriceInsert[] = [];
+  const unmatched = new Set<string>();
+  for (const r of rows) {
+    if (!(r.pvp > 0)) continue;
+    const label = r.empresa_label?.trim();
+    const empresaId = label ? map.get(normLabel(label)) : undefined;
+    if (!empresaId) {
+      if (label) unmatched.add(label);
+      continue;
+    }
+    out.push({ generic_code: r.generic_code, empresa_id: empresaId, pvp: r.pvp, valid_from: r.fecha_cambio ?? DEFAULT_FROM, source: 'pvp_rackone' });
+    if (r.pvp_anterior != null && r.pvp_anterior > 0 && r.pvp_anterior !== r.pvp) {
+      out.push({ generic_code: r.generic_code, empresa_id: empresaId, pvp: r.pvp_anterior, valid_from: PREV_FROM, source: 'pvp_rackone' });
+    }
+  }
+
   for (let i = 0; i < out.length; i += CHUNK) {
     const slice = out.slice(i, i + CHUNK);
-    const { error } = await admin.from('generic_prices').upsert(slice, { onConflict: 'generic_code,sales_org,valid_from', ignoreDuplicates: true });
+    const { error } = await admin.from('generic_prices').upsert(slice, { onConflict: 'generic_code,empresa_id,valid_from', ignoreDuplicates: true });
     if (error) return { ok: false, error: `generic_prices: ${error.message}` };
   }
-  return { ok: true, data: { generics: rows.length, priceRows: out.length } };
+  return { ok: true, data: { generics: rows.length, priceRows: out.length, unmatched: [...unmatched] } };
 }

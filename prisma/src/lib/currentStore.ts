@@ -8,7 +8,7 @@ export async function getCurrentStore(): Promise<PrismaStore | null> {
   const supabase = createClient();
   const { data } = await supabase
     .from('stores')
-    .select('id, code, name, sales_org')
+    .select('id, code, name, sales_org, empresa_id')
     .eq('id', id)
     .single();
   return (data as PrismaStore) ?? null;

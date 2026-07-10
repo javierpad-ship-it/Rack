@@ -63,14 +63,18 @@ export default async function FichaPage({ params }: { params: { sku: string } })
             </div>
 
             <div className="card">
-              <div className="price-grid">
-                <div className="price-main">
-                  <div><div className="eyebrow">PVP vigente {r.sales_org ? `· ${r.sales_org}` : ''}</div>
-                    <div className="v tnum">{money(r.precio?.pvp_vigente)}</div></div>
+              {r.empresa_id ? (
+                <div className="price-grid">
+                  <div className="price-main">
+                    <div><div className="eyebrow">PVP vigente {r.empresa_nombre ? `· ${r.empresa_nombre}` : ''}</div>
+                      <div className="v tnum">{money(r.precio?.pvp_vigente)}</div></div>
+                  </div>
+                  <div className="kpi"><div className="l">PVP anterior</div><div className="n tnum" style={{ fontSize: 18 }}>{money(r.precio?.pvp_anterior)}</div></div>
+                  <div className="kpi"><div className="l">Último cambio</div><div className="n tnum" style={{ fontSize: 18 }}>{fmtDate(r.precio?.fecha_cambio)}</div></div>
                 </div>
-                <div className="kpi"><div className="l">PVP anterior</div><div className="n tnum" style={{ fontSize: 18 }}>{money(r.precio?.pvp_anterior)}</div></div>
-                <div className="kpi"><div className="l">Último cambio</div><div className="n tnum" style={{ fontSize: 18 }}>{fmtDate(r.precio?.fecha_cambio)}</div></div>
-              </div>
+              ) : (
+                <p className="mini">Esta tienda no tiene una empresa asignada; pedile a un admin que la configure en Rack One → Tiendas para ver el PVP.</p>
+              )}
             </div>
 
             <div className="card">

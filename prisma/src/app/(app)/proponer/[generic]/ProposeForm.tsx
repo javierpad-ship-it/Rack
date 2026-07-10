@@ -8,12 +8,12 @@ export default function ProposeForm({
   generic,
   sku,
   currentPvp,
-  salesOrg,
+  empresaNombre,
 }: {
   generic: string;
   sku: string | null;
   currentPvp: number | null;
-  salesOrg: string | null;
+  empresaNombre: string | null;
 }) {
   const [newPvp, setNewPvp] = useState('');
   const [reason, setReason] = useState('');
@@ -45,7 +45,7 @@ export default function ProposeForm({
       <div className="card tint">
         <div className="row"><span className="muted">Genérico</span><b>{generic}</b></div>
         <div className="row"><span className="muted">PVP vigente</span><b className="tnum">{money(currentPvp)}</b></div>
-        <div className="row"><span className="muted">Org. de Ventas</span><span className="pill vig">{salesOrg ?? '—'}</span></div>
+        <div className="row"><span className="muted">Empresa</span><span className="pill vig">{empresaNombre ?? '—'}</span></div>
       </div>
 
       <div>

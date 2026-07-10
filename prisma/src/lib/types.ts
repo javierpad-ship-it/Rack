@@ -38,6 +38,8 @@ export type VariantLookup = {
   };
   precio: PriceInfo;
   sales_org: string | null;
+  empresa_id: string | null;
+  empresa_nombre: string | null;
   stock_variante: number;
   piso: number;
   almacen: number;

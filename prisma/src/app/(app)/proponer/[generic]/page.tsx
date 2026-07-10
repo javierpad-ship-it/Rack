@@ -17,11 +17,15 @@ export default async function ProponerPage({
   const sku = searchParams.sku ?? null;
   const store = await getCurrentStore();
   const supabase = createClient();
-  const { data } = await supabase.rpc('generic_price_info', {
+  const { data } = await supabase.rpc('generic_price_info_empresa', {
     p_generic: generic,
-    p_org: store?.sales_org ?? null,
+    p_empresa: store?.empresa_id ?? null,
   });
   const price = (data as PriceInfo) ?? null;
+  const { data: empresa } = store?.empresa_id
+    ? await supabase.from('empresas').select('nombre, nombre_reporte').eq('id', store.empresa_id).single()
+    : { data: null };
+  const empresaNombre = empresa ? (empresa.nombre_reporte ?? empresa.nombre) : null;
 
   return (
     <main className="app">
@@ -37,7 +41,7 @@ export default async function ProponerPage({
           generic={generic}
           sku={sku}
           currentPvp={price?.pvp_vigente ?? null}
-          salesOrg={store?.sales_org ?? null}
+          empresaNombre={empresaNombre}
         />
       </div>
     </main>
