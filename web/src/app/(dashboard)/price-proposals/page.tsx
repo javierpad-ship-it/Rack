@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type CSSProperties } from 'react';
 import {
   listProposals, acceptProposal, denyProposal, counterProposal,
   type ProposalRow, type ProposalStatus,
@@ -17,6 +17,18 @@ function money(v: number | null) {
   if (v == null) return '—';
   return v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// Columnas de rotación resaltadas en celeste (fondo suave + texto acento) para
+// distinguirlas del resto de la tabla de un vistazo.
+const ROT_BG = '#E7F4FB';
+const ROT_FG = '#0E7BA8';
+
+// Encabezado congelado: fondo sólido (igual al panel) para que no se transparente
+// el contenido al hacer scroll, con un borde para separarlo visualmente.
+const stickyTh: CSSProperties = {
+  position: 'sticky', top: 0, zIndex: 1,
+  background: 'var(--surface)', borderBottom: '2px solid var(--border)',
+};
 
 export default function PriceProposalsPage() {
   const [status, setStatus] = useState<ProposalStatus>('pendiente');
@@ -70,14 +82,14 @@ export default function PriceProposalsPage() {
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table className="panel" style={{ minWidth: 980 }}>
+        <table className="panel" style={{ minWidth: 980, borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th>Genérico</th><th>Solicitante</th><th>Tienda</th>
-              <th>PVP vig.</th><th>Propuesto</th><th>Costo prom.</th>
-              <th>Stk tienda</th><th>Rot. tienda</th>
-              <th>Stk cadena</th><th>Rot. cadena</th>
-              {status === 'pendiente' && <th>Acciones</th>}
+              <th style={stickyTh}>Genérico</th><th style={stickyTh}>Solicitante</th><th style={stickyTh}>Tienda</th>
+              <th style={stickyTh}>PVP vig.</th><th style={stickyTh}>Propuesto</th><th style={stickyTh}>Costo prom.</th>
+              <th style={stickyTh}>Stk tienda</th><th style={{ ...stickyTh, background: ROT_BG, color: ROT_FG }}>Rot. tienda</th>
+              <th style={stickyTh}>Stk cadena</th><th style={{ ...stickyTh, background: ROT_BG, color: ROT_FG }}>Rot. cadena</th>
+              {status === 'pendiente' && <th style={stickyTh}>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -90,9 +102,9 @@ export default function PriceProposalsPage() {
                 <td>{money(r.proposed_pvp)}</td>
                 <td>{money(r.costo_prom)}</td>
                 <td>{r.stock_tienda}</td>
-                <td>{r.rot_tienda}%</td>
+                <td style={{ background: ROT_BG, color: ROT_FG, fontWeight: 600 }}>{r.rot_tienda}%</td>
                 <td>{r.stock_cadena}</td>
-                <td>{r.rot_cadena}%</td>
+                <td style={{ background: ROT_BG, color: ROT_FG, fontWeight: 600 }}>{r.rot_cadena}%</td>
                 {status === 'pendiente' && (
                   <td>
                     <div className="row" style={{ gap: 6 }}>
