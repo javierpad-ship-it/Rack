@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Store, UserRole } from '@/lib/types';
-import { listUsers, createUser, updateUser, deleteUser, type UserRow } from './actions';
+import { listUsers, createUser, updateUser, deleteUser, listLineOptions, updateUserLines, type UserRow } from './actions';
 import PasswordInput from '@/components/PasswordInput';
 
 // El 'operario' de tienda usa AMBAS apps (Inventario y Repo) con el mismo
@@ -15,6 +15,7 @@ export default function UsersPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [lineOptions, setLineOptions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [email, setEmail] = useState('');
@@ -35,6 +36,7 @@ export default function UsersPage() {
       .select('*')
       .order('name')
       .then(({ data }) => setStores((data ?? []) as Store[]));
+    listLineOptions().then((res) => { if (res.ok) setLineOptions(res.data); });
     load();
   }, [supabase, load]);
 
@@ -85,6 +87,7 @@ export default function UsersPage() {
             <th>Email</th>
             <th>Rol</th>
             <th>Tienda</th>
+            <th>Línea responsable</th>
             <th></th>
           </tr>
         </thead>
@@ -127,6 +130,23 @@ export default function UsersPage() {
                 </select>
               </td>
               <td>
+                <select
+                  multiple
+                  value={u.lines}
+                  style={{ minWidth: 160, minHeight: 60 }}
+                  onChange={async (e) => {
+                    const vals = Array.from(e.target.selectedOptions).map((o) => o.value);
+                    const res = await updateUserLines(u.id, vals);
+                    if (!res.ok) setError(res.error);
+                    load();
+                  }}
+                >
+                  {lineOptions.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </td>
+              <td>
                 <button
                   className="secondary"
                   onClick={async () => {
@@ -144,7 +164,7 @@ export default function UsersPage() {
           ))}
           {users.length === 0 && (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={6} className="muted">
                 Sin usuarios.
               </td>
             </tr>
@@ -154,6 +174,11 @@ export default function UsersPage() {
       <p className="muted" style={{ fontSize: 12 }}>
         Nota: la columna Tienda aplica a roles visual / encargado / operario. El operario de la
         tienda usa las dos apps (Inventario y Repo) con el mismo usuario.
+      </p>
+      <p className="muted" style={{ fontSize: 12 }}>
+        <b>Línea responsable</b>: en qué línea(s) puede aceptar/denegar/contraproponer las propuestas
+        de precio que llegan desde Prisma (bandeja en &quot;Propuestas de precio&quot;). Ctrl/Cmd+clic para
+        elegir varias.
       </p>
     </div>
   );
