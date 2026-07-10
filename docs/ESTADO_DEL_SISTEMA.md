@@ -22,6 +22,15 @@ mueble/piso de venta**, y saber **dónde está la mercadería** (piso vs almacé
 > `/price-export`) revisa y exporta a SAP. Migraciones `0045–0053`. Comparte
 > `stores`/`profiles`; tablas propias: precios por genérico, propuestas, exports,
 > usuarios Prisma (DNI).
+>
+> **El PVP se resuelve por EMPRESA** (`0055`/`0056`), no por `sales_org`: cada
+> tienda (`stores.empresa_id`, editable en `/stores`) pertenece a una `empresa`
+> (`0054`, Mantenimiento → Empresas), y Prisma muestra/propone el precio de esa
+> empresa (`generic_price_info_empresa`, usado por `prisma_variant_lookup`). El
+> import de `/precios` trae `EMPRESA, CODIGO_GENERICO, PVP, PVP_ANTERIOR,
+> FECHA_CAMBIO_PVP` y resuelve EMPRESA contra el catálogo de empresas (nombre,
+> nombre_reporte o código SAP); lo que no matchea no se carga y se reporta.
+> `sales_org` queda solo para el export a SAP existente (sin cambios).
 
 Despliegue: **web en Railway**, **backend en Supabase Cloud**, **APK por GitHub
 Actions**. Ver `DEPLOY.md`.
