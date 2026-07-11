@@ -24,13 +24,14 @@ const ROT_BG = '#E7F4FB';
 const ROT_FG = '#0E7BA8';
 
 // Encabezado congelado: fondo sólido (igual al panel) para que no se transparente
-// el contenido al hacer scroll, con un borde para separarlo visualmente. El
-// sticky necesita que el ANCESTRO que scrollea tenga overflow-y acotado (ver
-// el div con maxHeight/overflowY:auto más abajo).
+// el contenido al hacer scroll. El sticky necesita que el contenedor que
+// scrollea tenga una altura ACOTADA (maxHeight + overflow:auto) — por eso el
+// wrapper de abajo tiene ambos ejes en 'auto' (X para ver todas las columnas
+// sin apretarlas, Y para que el thead quede fijo mientras se baja).
 const stickyTh: CSSProperties = {
   position: 'sticky', top: 0, zIndex: 1,
   background: 'var(--surface)', borderBottom: '2px solid var(--border)',
-  whiteSpace: 'normal',
+  whiteSpace: 'nowrap',
 };
 
 type SortDir = 'asc' | 'desc';
@@ -42,6 +43,8 @@ export default function PriceProposalsPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [storeFilter, setStoreFilter] = useState('');
   const [genderFilter, setGenderFilter] = useState('');
+  const [requesterFilter, setRequesterFilter] = useState('');
+  const [orgFilter, setOrgFilter] = useState('');
   const [sortDir, setSortDir] = useState<SortDir | null>(null);
 
   const load = useCallback(async (s: ProposalStatus) => {
@@ -51,9 +54,9 @@ export default function PriceProposalsPage() {
   }, []);
 
   useEffect(() => { load(status); }, [status, load]);
-  // Al cambiar de pestaña, los filtros de tienda/género pueden dejar de tener
-  // sentido (otras propuestas) — se resetean para no ocultar filas sin avisar.
-  useEffect(() => { setStoreFilter(''); setGenderFilter(''); }, [status]);
+  // Al cambiar de pestaña, los filtros pueden dejar de tener sentido (otras
+  // propuestas) — se resetean para no ocultar filas sin avisar.
+  useEffect(() => { setStoreFilter(''); setGenderFilter(''); setRequesterFilter(''); setOrgFilter(''); }, [status]);
 
   const stores = useMemo(
     () => [...new Set(rows.map((r) => r.tienda).filter((v): v is string => !!v))].sort(),
@@ -63,17 +66,29 @@ export default function PriceProposalsPage() {
     () => [...new Set(rows.map((r) => r.genero).filter((v): v is string => !!v))].sort(),
     [rows],
   );
+  const requesters = useMemo(
+    () => [...new Set(rows.map((r) => r.solicitante).filter((v): v is string => !!v))].sort(),
+    [rows],
+  );
+  const orgs = useMemo(
+    () => [...new Set(rows.map((r) => r.sales_org).filter((v): v is string => !!v))].sort(),
+    [rows],
+  );
 
   const displayRows = useMemo(() => {
     let out = rows;
     if (storeFilter) out = out.filter((r) => r.tienda === storeFilter);
     if (genderFilter) out = out.filter((r) => r.genero === genderFilter);
+    if (requesterFilter) out = out.filter((r) => r.solicitante === requesterFilter);
+    if (orgFilter) out = out.filter((r) => r.sales_org === orgFilter);
     if (sortDir) {
       out = [...out].sort((a, b) =>
         sortDir === 'asc' ? a.proposed_pvp - b.proposed_pvp : b.proposed_pvp - a.proposed_pvp);
     }
     return out;
-  }, [rows, storeFilter, genderFilter, sortDir]);
+  }, [rows, storeFilter, genderFilter, requesterFilter, orgFilter, sortDir]);
+
+  const hasFilters = storeFilter || genderFilter || requesterFilter || orgFilter;
 
   function toggleSort() {
     setSortDir((d) => (d === null ? 'desc' : d === 'desc' ? 'asc' : null));
@@ -127,8 +142,20 @@ export default function PriceProposalsPage() {
             {genders.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </label>
-        {(storeFilter || genderFilter) && (
-          <button className="secondary" onClick={() => { setStoreFilter(''); setGenderFilter(''); }}>
+        <label>Solicitante<br />
+          <select value={requesterFilter} onChange={(e) => setRequesterFilter(e.target.value)}>
+            <option value="">Todos</option>
+            {requesters.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </label>
+        <label>Org.<br />
+          <select value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)}>
+            <option value="">R050 y R040</option>
+            {orgs.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
+        {hasFilters && (
+          <button className="secondary" onClick={() => { setStoreFilter(''); setGenderFilter(''); setRequesterFilter(''); setOrgFilter(''); }}>
             Quitar filtros
           </button>
         )}
@@ -136,12 +163,14 @@ export default function PriceProposalsPage() {
       </div>
 
       {/* Wrapper con la tarjeta (panel) sin padding para que el borde/sombra no
-          se corte. Solo hay scroll VERTICAL (acotado, ancestro del thead
-          sticky); horizontal no: las celdas envuelven texto en vez de forzar
-          ancho, así no aparece la barra de desplazamiento horizontal. */}
+          se corte. El div de adentro tiene altura acotada y scroll en AMBOS
+          ejes: X para ver todas las columnas sin apretarlas (nada de texto
+          cortado) e Y (acotado a 65vh) para que el thead sticky funcione de
+          verdad — sin una altura máxima real, sticky no tiene ancestro de
+          scroll y el encabezado no llega a "flotar". */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ maxHeight: '65vh', overflowY: 'auto', overflowX: 'hidden' }}>
-          <table style={{ width: '100%', tableLayout: 'auto' }}>
+        <div style={{ maxHeight: '65vh', overflow: 'auto' }}>
+          <table style={{ minWidth: 1500, borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={stickyTh}>Genérico</th>
@@ -150,6 +179,7 @@ export default function PriceProposalsPage() {
                 <th style={stickyTh}>Mundo</th>
                 <th style={stickyTh}>Marca</th>
                 <th style={stickyTh}>Solicitante</th><th style={stickyTh}>Tienda</th>
+                <th style={stickyTh}>Org.</th>
                 <th style={stickyTh}>PVP vig.</th>
                 <th style={{ ...stickyTh, cursor: 'pointer', userSelect: 'none' }} onClick={toggleSort} title="Ordenar por propuesto">
                   Propuesto {sortDir === 'desc' ? '▼' : sortDir === 'asc' ? '▲' : ''}
@@ -170,6 +200,7 @@ export default function PriceProposalsPage() {
                   <td>{r.marca ?? <span className="muted">—</span>}</td>
                   <td>{r.solicitante ?? '—'}</td>
                   <td>{r.tienda ?? '—'}</td>
+                  <td>{r.sales_org ?? <span className="muted">—</span>}</td>
                   <td>{money(r.current_pvp)}</td>
                   <td>{money(r.proposed_pvp)}</td>
                   <td>{money(r.costo_prom)}</td>
@@ -189,7 +220,7 @@ export default function PriceProposalsPage() {
                 </tr>
               ))}
               {displayRows.length === 0 && (
-                <tr><td colSpan={status === 'pendiente' ? 15 : 14} className="muted">
+                <tr><td colSpan={status === 'pendiente' ? 16 : 15} className="muted">
                   {rows.length === 0 ? 'Sin propuestas en este estado.' : 'Sin propuestas para este filtro.'}
                 </td></tr>
               )}

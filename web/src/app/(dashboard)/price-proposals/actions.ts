@@ -23,6 +23,7 @@ export type ProposalRow = {
   resp: string | null;
   solicitante: string | null;
   tienda: string | null;
+  sales_org: string | null;
   descripcion: string | null;
   genero: string | null;
   marca: string | null;
