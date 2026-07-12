@@ -15,6 +15,15 @@ function swatch(color: string) {
   return SWATCH[k] ?? '#93a2c6';
 }
 
+// Semáforo de rotación (IRP del genérico, cadena) — 5 tramos.
+function rotBand(irp: number): { bg: string; fg: string; label: string } {
+  if (irp > 30) return { bg: '#2E9E44', fg: '#ffffff', label: 'Rotación alta' };
+  if (irp >= 25) return { bg: '#8FD694', fg: '#14421c', label: 'Rotación buena' };
+  if (irp >= 20) return { bg: '#B8860B', fg: '#ffffff', label: 'Rotación media' }; // ámbar oscuro
+  if (irp >= 15) return { bg: '#FF8C00', fg: '#ffffff', label: 'Rotación baja' };  // naranja
+  return { bg: '#C0392B', fg: '#ffffff', label: 'Rotación crítica' };             // rojo
+}
+
 export default async function FichaPage({ params }: { params: { sku: string } }) {
   const sku = decodeURIComponent(params.sku);
   const store = await getCurrentStore();
@@ -75,6 +84,22 @@ export default async function FichaPage({ params }: { params: { sku: string } })
               ) : (
                 <p className="mini">Esta tienda no tiene una empresa asignada; pedile a un admin que la configure en Rack One → Tiendas para ver el PVP.</p>
               )}
+            </div>
+
+            <div
+              className="card"
+              style={{
+                background: rotBand(r.rotacion).bg,
+                color: rotBand(r.rotacion).fg,
+                textAlign: 'center',
+                padding: '14px 16px',
+              }}
+            >
+              <div className="eyebrow" style={{ color: 'inherit', opacity: 0.85 }}>
+                Rotación del genérico (cadena, 30 d)
+              </div>
+              <div style={{ fontWeight: 800, fontSize: 30, lineHeight: 1.2 }}>{r.rotacion}%</div>
+              <div className="mini" style={{ color: 'inherit', opacity: 0.9 }}>{rotBand(r.rotacion).label}</div>
             </div>
 
             <div className="card">
