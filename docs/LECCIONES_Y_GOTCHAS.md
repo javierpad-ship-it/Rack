@@ -123,6 +123,30 @@ como huérfanas con el id viejo) → `update` del `fixture_id` al id nuevo (matc
 por `scanned_at`) → re-agregar la FK. Combinar con el fix #9 (APK) para que no
 bloquee a las demás.
 
+## #11 — Prisma despliega desde una rama distinta a `web/`/`supabase/`
+
+**Síntoma:** se hacen cambios en `prisma/` (o en algo que Prisma necesita en
+runtime), se commitea y pushea a la rama de trabajo, se avisa "listo" — pero en
+producción Prisma sigue mostrando la versión vieja. Cambios que "desaparecen".
+
+**Causa:** en Railway hay **dos servicios con distinta rama de origen**:
+- `web` (Rack One admin) despliega desde **`claude/eager-turing-1owj88`**.
+- **`prisma` despliega desde `claude/prisma-web-app-3rw1uv`**, una rama aparte.
+
+Como `claude/prisma-web-app-3rw1uv` es ancestro de `claude/eager-turing-1owj88`
+(el trabajo de Prisma se mergeó una vez hacia acá), es fácil asumir que ambas
+ramas se mantienen sincronizadas solas — **no es así**: son independientes desde
+el merge, y cualquier commit nuevo sobre `prisma/` en `claude/eager-turing-1owj88`
+se queda ahí hasta que se empuje explícitamente a `claude/prisma-web-app-3rw1uv`.
+
+**Regla:** después de tocar `prisma/` (o una migración que la app de campo
+consume), **confirmar con el usuario y sincronizar `claude/prisma-web-app-3rw1uv`**
+(fast-forward simple, ya que es ancestro: `git push origin
+claude/eager-turing-1owj88:claude/prisma-web-app-3rw1uv`) — dispara un redeploy
+en Railway, así que se pide confirmación antes de pushear ahí. Antes de asumir
+"ya está desplegado", verificar en Railway → servicio Prisma → Settings →
+Source qué rama tiene configurada.
+
 ## Conector Supabase (operativo, no del producto)
 
 En sesiones de chat el conector MCP a veces figura `enabledInChat: false` (apagado

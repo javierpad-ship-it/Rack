@@ -67,3 +67,9 @@ Ver `docs/PREGUNTAS_PENDIENTES.md` (formato de Excel, definición de semana, mod
 
 - Rama de trabajo: `claude/eager-turing-1owj88`. Commitear y pushear cambios completos.
 - No crear PRs salvo pedido explícito.
+- **⚠️ Prisma (`prisma/`) se despliega en Railway desde OTRA rama: `claude/prisma-web-app-3rw1uv`,
+  NO desde `claude/eager-turing-1owj88`.** `web/` y `supabase/` sí despliegan desde
+  `claude/eager-turing-1owj88`. Si se toca algo dentro de `prisma/` (o una migración que Prisma
+  necesita en runtime), el cambio **no llega a producción** hasta que también se empuje/mergee a
+  `claude/prisma-web-app-3rw1uv` — confirmar con el usuario antes de pushear ahí (dispara un
+  redeploy). Ver gotcha #11 en `docs/LECCIONES_Y_GOTCHAS.md`.

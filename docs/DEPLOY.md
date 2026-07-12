@@ -46,7 +46,10 @@ La web Next.js vive en `web/` y apunta a Supabase Cloud por variables de entorno
 La PWA de consulta/propuesta de precios vive en `prisma/` y usa la **misma base Supabase** que Rack One.
 Es un servicio Railway aparte, mismo patrón que la web:
 
-1. Railway → **New Service > Deploy from GitHub repo** (el mismo repo; elegir la rama de Prisma).
+1. Railway → **New Service > Deploy from GitHub repo** (el mismo repo; rama **`claude/prisma-web-app-3rw1uv`**
+   — **DISTINTA** de la rama de la web/Supabase (`claude/eager-turing-1owj88`). Un cambio en `prisma/`
+   pusheado solo a `claude/eager-turing-1owj88` **no llega a este servicio** hasta que también se
+   empuje a `claude/prisma-web-app-3rw1uv` (ver gotcha #11 en `LECCIONES_Y_GOTCHAS.md`).
 2. Service > **Settings > Root Directory = `prisma`**. Nixpacks autodetecta Next.js; build/start ya están en
    `prisma/railway.json` (`next build` + `next start -p $PORT`).
 3. **Variables** (las mismas que Rack One, apuntan a la base "Rack one"):
