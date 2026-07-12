@@ -6,7 +6,17 @@ export const metadata: Metadata = {
   title: 'Prisma — Rack One',
   description: 'Consulta de producto y propuesta de precios en tienda.',
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  // Safari (Add to Home Screen) no soporta SVG en apple-touch-icon: necesita PNG.
+  // Chrome/Edge exigen al menos un ícono PNG (192/512) en el manifest para
+  // ofrecer el prompt automático de instalación; el SVG solo no alcanza.
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: { capable: true, title: 'Prisma', statusBarStyle: 'black-translucent' },
 };
 

@@ -1,7 +1,10 @@
 // Service worker mínimo: app shell offline-friendly. La app necesita red para
 // consultar Supabase; el SW solo cachea el shell para arranque rápido/instalable.
-const CACHE = 'prisma-v1';
-const SHELL = ['/', '/login', '/icon.svg', '/manifest.webmanifest'];
+const CACHE = 'prisma-v2';
+const SHELL = [
+  '/', '/login', '/manifest.webmanifest',
+  '/icon.svg', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
