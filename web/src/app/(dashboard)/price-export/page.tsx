@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { listExportable, generateExport, type ExportableRow } from './actions';
 
 function money(v: number) {
@@ -19,16 +19,32 @@ export default function PriceExportPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastExportId, setLastExportId] = useState<number | null>(null);
+  const [respFilter, setRespFilter] = useState('');
+  const [showExported, setShowExported] = useState(false);
 
   const load = useCallback(async () => {
     const res = await listExportable();
     if (res.ok) {
       setRows(res.data);
-      setSelected(new Set(res.data.map((r) => r.id)));
+      setSelected(new Set(res.data.filter((r) => !r.exported_at).map((r) => r.id)));
     } else setError(res.error);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const resps = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.resp ?? '(sin responsable)'))).sort(),
+    [rows],
+  );
+
+  const visibleRows = useMemo(
+    () => rows.filter((r) => {
+      if (!showExported && r.exported_at) return false;
+      if (respFilter && (r.resp ?? '(sin responsable)') !== respFilter) return false;
+      return true;
+    }),
+    [rows, respFilter, showExported],
+  );
 
   function toggle(id: number) {
     setSelected((prev) => {
@@ -72,6 +88,20 @@ export default function PriceExportPage() {
         </button>
       </div>
 
+      <div className="row panel" style={{ gap: 20, margin: '14px 0', alignItems: 'center' }}>
+        <span>
+          <b>Responsable:</b>{' '}
+          <select value={respFilter} onChange={(e) => setRespFilter(e.target.value)}>
+            <option value="">Todos</option>
+            {resps.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </span>
+        <label>
+          <input type="checkbox" checked={showExported} onChange={(e) => setShowExported(e.target.checked)} />
+          {' '}Mostrar ya exportados
+        </label>
+      </div>
+
       {error && <p className="neg">{error}</p>}
       {lastExportId != null && (
         <p className="pos">
@@ -83,21 +113,35 @@ export default function PriceExportPage() {
       <table className="panel">
         <thead>
           <tr>
-            <th></th><th>Genérico</th><th>Org. origen</th><th>Estado</th><th>PVP a cargar</th>
+            <th></th><th>Genérico</th><th>Responsable</th><th>Org. origen</th><th>Estado</th>
+            <th>PVP a cargar</th><th>Exportado</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {visibleRows.map((r) => (
             <tr key={r.id}>
-              <td><input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.id)}
+                  disabled={!!r.exported_at}
+                  onChange={() => toggle(r.id)}
+                />
+              </td>
               <td>{r.generic_code}</td>
+              <td>{r.resp ?? '(sin responsable)'}</td>
               <td>{r.sales_org ?? '—'}</td>
               <td>{r.status}</td>
               <td>{money(r.decided_pvp ?? r.proposed_pvp)}</td>
+              <td>
+                {r.exported_at
+                  ? <span className="pos">{new Date(r.exported_at).toLocaleDateString('es-PE')}</span>
+                  : <span className="muted">—</span>}
+              </td>
             </tr>
           ))}
-          {rows.length === 0 && (
-            <tr><td colSpan={5} className="muted">Sin propuestas aceptadas pendientes de exportar.</td></tr>
+          {visibleRows.length === 0 && (
+            <tr><td colSpan={7} className="muted">Sin propuestas para los filtros elegidos.</td></tr>
           )}
         </tbody>
       </table>

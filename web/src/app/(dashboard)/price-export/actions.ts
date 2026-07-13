@@ -20,21 +20,23 @@ export type ExportableRow = {
   id: number;
   generic_code: string;
   sales_org: string | null;
+  resp: string | null;
   proposed_pvp: number;
   decided_pvp: number | null;
   status: 'aceptada' | 'contrapropuesta';
+  exported_at: string | null;
 };
 
-// Aceptadas/contrapropuestas con precio decidido, aún no exportadas.
+// Aceptadas/contrapropuestas con precio decidido (exportadas o no; el filtro
+// de "ya exportado" y responsable se resuelve en el cliente).
 export async function listExportable(): Promise<ActionResult<ExportableRow[]>> {
   const uid = await ensureExporter();
   if (!uid) return { ok: false, error: 'Requiere rol admin o analista.' };
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('price_proposals')
-    .select('id, generic_code, sales_org, proposed_pvp, decided_pvp, status')
+    .select('id, generic_code, sales_org, resp, proposed_pvp, decided_pvp, status, exported_at')
     .in('status', ['aceptada', 'contrapropuesta'])
-    .is('exported_at', null)
     .order('generic_code');
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: (data ?? []) as ExportableRow[] };
