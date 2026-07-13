@@ -8,6 +8,7 @@ next-env.d.ts
 .env*.local
 npm-debug.log*
 yarn-error.log*
+tsconfig.tsbuildinfo
 
 # Supabase
 supabase/.branches/
