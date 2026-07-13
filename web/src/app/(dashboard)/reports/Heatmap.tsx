@@ -32,6 +32,10 @@ export default function Heatmap({
   }
 
   const placed = fixtures.filter((f) => f.pin_x != null && f.pin_y != null);
+  const fmtMoney = (n: number) => (Number(n) || 0).toLocaleString('es-PE', { maximumFractionDigits: 0 });
+
+  // 6 paradas de la escala para la leyenda (0 -> max).
+  const steps = [0, 0.2, 0.4, 0.6, 0.8, 1];
 
   return (
     <div className="panel">
@@ -42,7 +46,7 @@ export default function Heatmap({
           return (
             <span
               key={f.id}
-              title={`${f.name}: S/ ${(Number(amount) || 0).toLocaleString('es-PE')}`}
+              title={`${f.name}: S/ ${fmtMoney(amount)} (últimos 7 días)`}
               style={{
                 position: 'absolute',
                 left: `${(f.pin_x as number) * 100}%`,
@@ -59,10 +63,30 @@ export default function Heatmap({
           );
         })}
       </div>
-      <p className="muted" style={{ fontSize: 12 }}>
-        Color por venta de la semana (azul = menor, rojo = mayor). Máximo: $
-        {(Number(max) || 0).toLocaleString('es-PE')}.
+
+      <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+        Color por venta de los <b>últimos 7 días</b> (hoy y los 6 anteriores) por mueble.
       </p>
+
+      <div style={{ marginTop: 6, maxWidth: 420 }}>
+        <div
+          style={{
+            height: 14,
+            borderRadius: 7,
+            background: `linear-gradient(to right, ${steps.map((t) => color(t * max)).join(', ')})`,
+            border: '1px solid rgba(0,0,0,0.1)',
+          }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#666', marginTop: 4 }}>
+          {steps.map((t) => (
+            <span key={t}>S/ {fmtMoney(t * max)}</span>
+          ))}
+        </div>
+        <p className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+          Azul = menor venta del mueble (o sin venta) · Rojo = mayor venta (S/ {fmtMoney(max)}, el mueble
+          top de esta tienda en los últimos 7 días).
+        </p>
+      </div>
     </div>
   );
 }

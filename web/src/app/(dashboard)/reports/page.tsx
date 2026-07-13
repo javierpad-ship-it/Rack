@@ -26,6 +26,13 @@ interface UnattributedRow {
   amount: number;
 }
 
+interface Last7Row {
+  fixture_id: string;
+  fixture_name: string;
+  units: number;
+  amount: number;
+}
+
 export default function ReportsPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
@@ -36,6 +43,7 @@ export default function ReportsPage() {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [layout, setLayout] = useState<StoreLayout | null>(null);
   const [unattributed, setUnattributed] = useState<UnattributedRow[]>([]);
+  const [last7, setLast7] = useState<Last7Row[]>([]);
   const [tab, setTab] = useState<'tabla' | 'heatmap' | 'almacen' | 'sinmueble'>('tabla');
 
   useEffect(() => {
@@ -61,7 +69,7 @@ export default function ReportsPage() {
   const load = useCallback(async () => {
     if (!storeId) return;
     const prev = previousIsoWeek(week);
-    const [{ data: wow }, { data: wh }, { data: fx }, { data: lay }, { data: un }] =
+    const [{ data: wow }, { data: wh }, { data: fx }, { data: lay }, { data: un }, { data: l7 }] =
       await Promise.all([
         supabase.rpc('fixture_week_over_week', {
           p_store_id: storeId,
@@ -72,12 +80,14 @@ export default function ReportsPage() {
         supabase.from('fixtures').select('*').eq('store_id', storeId),
         supabase.from('store_layouts').select('*').eq('store_id', storeId).maybeSingle(),
         supabase.rpc('unattributed_sales', { p_store_id: storeId, p_week: week }),
+        supabase.rpc('fixture_last7_sales', { p_store_id: storeId }),
       ]);
     setRows((wow ?? []) as WoWRow[]);
     setWarehouse((wh ?? []) as WarehouseRow[]);
     setFixtures((fx ?? []) as Fixture[]);
     setLayout((lay as StoreLayout) ?? null);
     setUnattributed((un ?? []) as UnattributedRow[]);
+    setLast7((l7 ?? []) as Last7Row[]);
   }, [supabase, storeId, week]);
 
   useEffect(() => {
@@ -200,7 +210,11 @@ export default function ReportsPage() {
       )}
 
       {tab === 'heatmap' && (
-        <Heatmap layout={layout} fixtures={fixtures} metrics={rows} />
+        <Heatmap
+          layout={layout}
+          fixtures={fixtures}
+          metrics={last7.map((r) => ({ fixture_id: r.fixture_id, amount_now: r.amount }))}
+        />
       )}
 
       {tab === 'sinmueble' && (
