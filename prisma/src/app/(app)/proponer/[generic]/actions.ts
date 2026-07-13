@@ -21,14 +21,10 @@ export async function createProposal(input: {
   const storeId = getSelectedStoreId();
   const { data: store } = await supabase.from('stores').select('sales_org').eq('id', storeId).single();
 
-  // Responsable de línea (resp) del genérico, de la última foto de stock.
-  const { data: snap } = await supabase
-    .from('stock_snapshots')
-    .select('resp, snapshot_date')
-    .eq('generic_code', input.generic_code)
-    .order('snapshot_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Responsable de línea (resp) del genérico. stock_snapshots.generic_code no
+  // se pobló nunca por import (mismo gotcha que 0051/0060): el genérico se
+  // deriva del SKU, no vive en una columna. resp_of_generic() lo resuelve bien.
+  const { data: resp } = await supabase.rpc('resp_of_generic', { p_generic: input.generic_code });
 
   const { error } = await supabase.from('price_proposals').insert({
     generic_code: input.generic_code,
@@ -37,7 +33,7 @@ export async function createProposal(input: {
     sales_org: store?.sales_org ?? null,
     requested_by: user.id,
     reason: input.reason || null,
-    resp: snap?.resp ?? null,
+    resp: resp ?? null,
     current_pvp: input.current_pvp,
     proposed_pvp: input.proposed_pvp,
   });
