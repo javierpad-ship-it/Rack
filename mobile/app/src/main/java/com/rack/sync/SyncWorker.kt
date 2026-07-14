@@ -94,7 +94,16 @@ class SyncWorker(
 
     private fun isUnauthorized(e: Exception): Boolean = e.message?.contains("401") == true
 
-    /** Renueva el access token con el refresh token. `false` si no se pudo. */
+    /**
+     * Renueva el access token con el refresh token. `false` si no se pudo.
+     *
+     * Si Supabase rechaza el refresh token (401/400 — p. ej. "Already Used" tras
+     * una carrera renovación/crash), reintentar por siempre no sirve: el token
+     * quedó permanentemente inválido y solo un login nuevo genera uno válido.
+     * Se limpia la sesión para que la próxima vez que se abra la app (o vuelva
+     * a primer plano) MainActivity la vea deslogueada y pida login, en vez de
+     * quedar "Sincronizando…" para siempre en silencio.
+     */
     private fun renewToken(): Boolean {
         val refresh = session.refreshToken ?: return false
         return try {
@@ -103,9 +112,12 @@ class SyncWorker(
             session.refreshToken = renewed.refreshToken
             true
         } catch (e: Exception) {
+            if (isUnauthorized(e) || isBadRequest(e)) session.clear()
             false
         }
     }
+
+    private fun isBadRequest(e: Exception): Boolean = e.message?.contains("400") == true
 
     // La app solo RECOGE datos: no baja el catálogo de productos (107k variantes
     // hacían lento el sync y no aportan al escaneo). Solo se cachean los muebles
