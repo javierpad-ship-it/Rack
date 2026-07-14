@@ -147,6 +147,34 @@ en Railway, así que se pide confirmación antes de pushear ahí. Antes de asumi
 "ya está desplegado", verificar en Railway → servicio Prisma → Settings →
 Source qué rama tiene configurada.
 
+## #12 — Refresh token inválido dejaba el sync trabado en silencio
+
+**Síntoma:** uno o dos equipos muestran "Sincronizando…" indefinidamente para
+un puñado de sesiones puntuales (no todas), con buena señal y sin que otros
+equipos de la misma tienda tengan problema. Los muebles afectados no siguen
+ningún patrón (no son los últimos creados ni comparten nada obvio).
+
+**Causa:** el access token de Supabase caduca (~1h) y `SyncWorker` lo renueva
+con el refresh token (`renewToken()`). Si ese refresh token queda **inválido**
+(Supabase Auth lo marca "Already Used" si hay una carrera renovación/crash de
+la app justo después de pedirlo y antes de persistir el nuevo par), el
+`POST /auth/v1/token?grant_type=refresh_token` empieza a devolver **400** para
+siempre. `renewToken()` devolvía `false` sin limpiar nada, así que el equipo
+reintentaba con el mismo token muerto en cada sync periódico, sin que la UI
+avisara — quedaba "logueado" indefinidamente aunque el servidor ya no lo
+reconociera. Diagnosticado viendo **Supabase → Logs → API Logs**: patrón
+`POST scan_sessions 401` → `POST /auth/v1/token 400` → `GET fixtures 401`
+repetido cada pocos minutos.
+
+**Fix (`91c25ce`):** si el refresh falla con 401/400, `renewToken()` limpia la
+sesión (`session.clear()`). `MainActivity` además revisa `isLoggedIn` al
+volver a primer plano (`ON_RESUME`), no solo al abrir la app, así que en
+cualquier caso el equipo termina mandando a loguear de nuevo en vez de
+quedarse mudo. **Recuperación inmediata sin esperar el APK nuevo:** cerrar
+sesión manualmente y volver a loguear en el equipo afectado — los escaneos
+pendientes ya guardados localmente no se pierden y suben solos apenas hay
+sesión válida. **Requiere APK nuevo** (CI) para que el fix tome efecto solo.
+
 ## Conector Supabase (operativo, no del producto)
 
 En sesiones de chat el conector MCP a veces figura `enabledInChat: false` (apagado
