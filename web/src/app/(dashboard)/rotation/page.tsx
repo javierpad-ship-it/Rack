@@ -43,6 +43,9 @@ function irpText(irp: number): string {
   return '#C62828';
 }
 const fmt = (n: number) => Math.round(Number(n) || 0).toLocaleString('es-PE');
+// Indicador combinado: IRP% × Margen% / 100 (ambos en escala 0-100), para verlo
+// también en puntos porcentuales. Ej. IRP 21.3% y Margen 57.8% -> 12.3.
+const score = (irp: number, mgn: number) => Math.round(((Number(irp) || 0) * (Number(mgn) || 0)) / 100 * 10) / 10;
 
 export default function RotationPage() {
   const supabase = createClient();
@@ -265,7 +268,8 @@ export default function RotationPage() {
             <thead>
               <tr>
                 <th>{grpLabel}</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th>
-                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th>{!report?.complete && <th>IRP proy.</th>}
+                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th title="IRP% × Margen% / 100">IRP × Margen</th>
+                {!report?.complete && <th>IRP proy.</th>}
               </tr>
             </thead>
             <tbody>
@@ -274,10 +278,11 @@ export default function RotationPage() {
                   <td>{r.grp}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
                   <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
                   <td>{r.mgn}%</td>
+                  <td style={{ fontWeight: 600 }}>{score(r.irp, r.mgn)}</td>
                   {!report?.complete && <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
               ))}
-              {(report?.rows ?? []).length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
+              {(report?.rows ?? []).length === 0 && <tr><td colSpan={8} className="muted">Sin datos para el filtro.</td></tr>}
             </tbody>
             {(report?.rows ?? []).length > 0 && (
               <tfoot>
@@ -285,6 +290,7 @@ export default function RotationPage() {
                   <td>TOTAL</td><td>{fmt(k.cant)}</td><td>{fmt(k.val)}</td><td>{fmt(k.stk)}</td><td>{fmt(k.stk_val)}</td>
                   <td><span style={{ color: irpText(k.irp) }}>{k.irp}%</span></td>
                   <td>{k.mgn}%</td>
+                  <td>{score(k.irp, k.mgn)}</td>
                   {!report?.complete && <td><span style={{ color: irpText(k.irp_proy) }}>{k.irp_proy}%</span></td>}
                 </tr>
               </tfoot>
