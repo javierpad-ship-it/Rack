@@ -268,7 +268,7 @@ export default function RotationPage() {
             <thead>
               <tr>
                 <th>{grpLabel}</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th>
-                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th title="IRP proyectado% × Margen% / 100">IRP proy. × Margen</th>
+                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th title="GMR = IRP proyectado% × Margen% / 100">GMR</th>
                 {!report?.complete && <th>IRP proy.</th>}
               </tr>
             </thead>
@@ -308,7 +308,7 @@ export default function RotationPage() {
           <h2 style={{ marginBottom: 6 }}>Rotación por tienda</h2>
           <table className="panel">
             <thead>
-              <tr><th>Tienda</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th><th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th>IRP proy.</th></tr>
+              <tr><th>Tienda</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th><th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th>IRP proy.</th><th title="GMR = IRP proyectado% × Margen% / 100">GMR</th></tr>
             </thead>
             <tbody>
               {storeRows.map((r) => (
@@ -317,9 +317,10 @@ export default function RotationPage() {
                   <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
                   <td>{r.mgn}%</td>
                   <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>
+                  <td style={{ fontWeight: 600 }}>{score(r.irp_proy, r.mgn)}</td>
                 </tr>
               ))}
-              {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Sin datos para el filtro.</td></tr>}
+              {storeRows.length === 0 && <tr><td colSpan={8} className="muted">Sin datos para el filtro.</td></tr>}
             </tbody>
             {storeRows.length > 0 && (
               <tfoot>
@@ -328,6 +329,7 @@ export default function RotationPage() {
                   <td>{fmt(storeTotals.stk)}</td><td>{fmt(storeTotals.stk_val)}</td>
                   <td><span style={{ color: irpText(storeTotals.irp) }}>{storeTotals.irp}%</span></td>
                   <td>{storeTotals.mgn}%</td>
+                  <td>—</td>
                   <td>—</td>
                 </tr>
               </tfoot>
