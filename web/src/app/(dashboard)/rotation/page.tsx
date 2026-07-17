@@ -268,7 +268,7 @@ export default function RotationPage() {
             <thead>
               <tr>
                 <th>{grpLabel}</th><th>Ventas (und)</th><th>Monto (S/)</th><th>Stock (und)</th>
-                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th title="IRP% × Margen% / 100">IRP × Margen</th>
+                <th>Stk Val (S/)</th><th>IRP</th><th>Margen %</th><th title="IRP proyectado% × Margen% / 100">IRP proy. × Margen</th>
                 {!report?.complete && <th>IRP proy.</th>}
               </tr>
             </thead>
@@ -278,7 +278,7 @@ export default function RotationPage() {
                   <td>{r.grp}</td><td>{fmt(r.cant)}</td><td>{fmt(r.val)}</td><td>{fmt(r.stk)}</td><td>{fmt(r.stk_val)}</td>
                   <td><span style={{ color: irpText(r.irp), fontWeight: 700 }}>{r.irp}%</span></td>
                   <td>{r.mgn}%</td>
-                  <td style={{ fontWeight: 600 }}>{score(r.irp, r.mgn)}</td>
+                  <td style={{ fontWeight: 600 }}>{score(r.irp_proy, r.mgn)}</td>
                   {!report?.complete && <td><span style={{ color: irpText(r.irp_proy) }}>{r.irp_proy}%</span></td>}
                 </tr>
               ))}
@@ -290,7 +290,7 @@ export default function RotationPage() {
                   <td>TOTAL</td><td>{fmt(k.cant)}</td><td>{fmt(k.val)}</td><td>{fmt(k.stk)}</td><td>{fmt(k.stk_val)}</td>
                   <td><span style={{ color: irpText(k.irp) }}>{k.irp}%</span></td>
                   <td>{k.mgn}%</td>
-                  <td>{score(k.irp, k.mgn)}</td>
+                  <td>{score(k.irp_proy, k.mgn)}</td>
                   {!report?.complete && <td><span style={{ color: irpText(k.irp_proy) }}>{k.irp_proy}%</span></td>}
                 </tr>
               </tfoot>
