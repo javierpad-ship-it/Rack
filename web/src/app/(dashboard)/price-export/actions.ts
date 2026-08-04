@@ -44,6 +44,33 @@ export async function listExportable(): Promise<ActionResult<ExportableRow[]>> {
 
 // Genera el lote: inserta en generic_prices (nuevo vigente por Org elegida),
 // marca exported_at, y devuelve las filas para el xlsx.
+// Descarta una propuesta duplicada (mismo genérico con más de una lista para
+// exportar): la deniega para que salga de "exportables" sin tocar la otra.
+export async function discardProposal(id: number, note?: string): Promise<ActionResult> {
+  const uid = await ensureExporter();
+  if (!uid) return { ok: false, error: 'Requiere rol admin o analista.' };
+  const admin = createAdminClient();
+  const { data: prop } = await admin
+    .from('price_proposals')
+    .select('id, exported_at')
+    .eq('id', id)
+    .single();
+  if (!prop) return { ok: false, error: 'Propuesta no encontrada.' };
+  if (prop.exported_at) return { ok: false, error: 'Ya fue exportada, no se puede descartar.' };
+  const { error } = await admin
+    .from('price_proposals')
+    .update({
+      status: 'denegada',
+      review_note: note ?? 'Descartada en exportación: duplicado de otra propuesta para el mismo genérico.',
+      reviewed_by: uid,
+      reviewed_at: new Date().toISOString(),
+      seen_by_requester_at: null,
+    })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function generateExport(
   proposalIds: number[],
   orgs: string[],
@@ -64,6 +91,22 @@ export async function generateExport(
     .is('exported_at', null);
   if (pErr) return { ok: false, error: pErr.message };
   if (!props?.length) return { ok: false, error: 'Nada por exportar (¿ya se exportó?).' };
+
+  // Red de seguridad: dos propuestas del mismo genérico en la misma tanda
+  // pisarían el mismo precio en generic_prices (una se ignora en silencio).
+  // Se corta acá aunque la UI ya avise y deje descartar duplicados antes.
+  const dupGenerics = new Set<string>();
+  const seen = new Set<string>();
+  for (const p of props) {
+    if (seen.has(p.generic_code)) dupGenerics.add(p.generic_code);
+    seen.add(p.generic_code);
+  }
+  if (dupGenerics.size > 0) {
+    return {
+      ok: false,
+      error: `Hay más de una propuesta seleccionada para el/los genérico(s) ${[...dupGenerics].join(', ')}. Descartá una antes de generar.`,
+    };
+  }
 
   const { data: exp, error: eErr } = await admin
     .from('price_change_exports')

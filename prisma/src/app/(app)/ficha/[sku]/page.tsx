@@ -136,6 +136,25 @@ export default async function FichaPage({ params }: { params: { sku: string } })
               ))}
             </div>
 
+            {r.propuesta_pendiente.length > 0 && (
+              <div className="card" style={{ background: '#FFF3CD', color: '#5a4600' }}>
+                <div className="eyebrow" style={{ color: 'inherit', opacity: 0.85 }}>
+                  {r.propuesta_pendiente.length === 1
+                    ? 'Ya hay una propuesta de precio en trámite'
+                    : `Ya hay ${r.propuesta_pendiente.length} propuestas de precio en trámite`}
+                </div>
+                {r.propuesta_pendiente.map((p) => (
+                  <div key={p.id} className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>
+                    <span className="mini">{p.tienda ?? '—'} · {p.solicitante ?? '—'} · {new Date(p.created_at).toLocaleDateString('es-PE')}</span>
+                    <b className="tnum">{money(p.proposed_pvp)}</b>
+                  </div>
+                ))}
+                <div className="mini" style={{ marginTop: 6, opacity: 0.85 }}>
+                  Si igual creés que hace falta otro precio, podés proponerlo — el responsable de línea decide cuál queda.
+                </div>
+              </div>
+            )}
+
             <Link className="btn primary" href={`/proponer/${encodeURIComponent(r.variante.generic_code ?? '')}?sku=${encodeURIComponent(r.variante.sku)}`}>
               Proponer nuevo precio
             </Link>

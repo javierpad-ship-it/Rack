@@ -31,6 +31,7 @@ export type ProposalRow = {
   current_pvp: number | null;
   proposed_pvp: number;
   costo_prom: number | null;
+  dup_count: number;
   stock_tienda: number;
   rot_tienda: number;
   stock_cadena: number;
@@ -87,8 +88,31 @@ async function decide(
   return { ok: true };
 }
 
+// Al aceptar una propuesta, cualquier otra 'pendiente' del mismo genérico deja
+// de tener sentido (solo puede quedar un precio vigente) — se deniega sola,
+// para que nunca lleguen dos propuestas del mismo código a exportación.
 export async function acceptProposal(id: number, proposedPvp: number, note?: string): Promise<ActionResult> {
-  return decide(id, 'aceptada', proposedPvp, note ?? null);
+  const res = await decide(id, 'aceptada', proposedPvp, note ?? null);
+  if (!res.ok) return res;
+  const admin = createAdminClient();
+  const { data: accepted } = await admin.from('price_proposals').select('generic_code').eq('id', id).single();
+  if (accepted?.generic_code) {
+    const user = await currentUser();
+    await admin
+      .from('price_proposals')
+      .update({
+        status: 'denegada',
+        review_note: `Denegada automáticamente: se aceptó otra propuesta (#${id}) para este genérico.`,
+        reviewed_by: user?.id ?? null,
+        reviewed_at: new Date().toISOString(),
+        seen_by_requester_at: null,
+      })
+      .eq('generic_code', accepted.generic_code)
+      .eq('status', 'pendiente')
+      .neq('id', id);
+  }
+  revalidatePath('/price-proposals');
+  return res;
 }
 
 export async function denyProposal(id: number, note?: string): Promise<ActionResult> {

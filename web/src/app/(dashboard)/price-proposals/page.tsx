@@ -123,6 +123,12 @@ export default function PriceProposalsPage() {
     <div>
       <h1>Propuestas de precio</h1>
       <p className="muted">Flujo de propuestas desde Prisma. Rotación = IRP (ventas / (ventas+stock) × 100), 30 días.</p>
+      {status === 'pendiente' && rows.some((r) => r.dup_count > 1) && (
+        <p className="neg" style={{ marginTop: -6 }}>
+          ⚠️ Hay genéricos con más de una propuesta pendiente (resaltados abajo, agrupados por genérico). Al
+          aceptar una, las demás del mismo genérico se deniegan solas.
+        </p>
+      )}
 
       <div className="row" style={{ margin: '12px 0', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label>Estado<br />
@@ -192,8 +198,15 @@ export default function PriceProposalsPage() {
             </thead>
             <tbody>
               {displayRows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.generic_code}</td>
+                <tr key={r.id} style={r.dup_count > 1 ? { background: '#FFF3CD' } : undefined}>
+                  <td>
+                    {r.generic_code}
+                    {r.dup_count > 1 && (
+                      <span className="pill" style={{ marginLeft: 6, background: '#E8A700', color: '#3a2c00' }} title="Más de una propuesta pendiente para este genérico">
+                        ×{r.dup_count}
+                      </span>
+                    )}
+                  </td>
                   <td>{r.descripcion ?? <span className="muted">—</span>}</td>
                   <td>{r.genero ?? <span className="muted">—</span>}</td>
                   <td>{r.mundo ?? <span className="muted">—</span>}</td>

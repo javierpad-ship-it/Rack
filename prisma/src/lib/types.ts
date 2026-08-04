@@ -21,6 +21,15 @@ export type PriceInfo = {
   historial: { pvp: number; desde: string }[];
 };
 
+export type PendingProposal = {
+  id: number;
+  proposed_pvp: number;
+  current_pvp: number | null;
+  created_at: string;
+  tienda: string | null;
+  solicitante: string | null;
+};
+
 export type VariantLookup = {
   sku: string;
   found: boolean;
@@ -47,6 +56,7 @@ export type VariantLookup = {
   vendido_dias: number;
   vendido: number;
   por_color: ColorGroup[];
+  propuesta_pendiente: PendingProposal[];
 };
 
 export function money(v: number | null | undefined): string {
