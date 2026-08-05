@@ -3,6 +3,9 @@
 Stack: **Supabase** (DB + Auth + Storage) · **Railway** (web) · **APK** (app Android, por CI).
 Objetivo: simple y económico para 10-50 tiendas.
 
+> Un solo repo, tres ramas activas (cada servicio Railway apunta a la suya). Antes de pushear algo
+> de `prisma/`, ver `docs/RAMAS_Y_DESPLIEGUE.md` para no confundir dónde queda cada cambio.
+
 > **Sin entorno local.** Todo se hace desde el navegador (dashboards de Railway y Supabase) o por
 > **GitHub Actions**. No hace falta instalar Node, Gradle ni la CLI de Supabase en ninguna PC.
 

@@ -73,3 +73,7 @@ Ver `docs/PREGUNTAS_PENDIENTES.md` (formato de Excel, definición de semana, mod
   necesita en runtime), el cambio **no llega a producción** hasta que también se empuje/mergee a
   `claude/prisma-web-app-3rw1uv` — confirmar con el usuario antes de pushear ahí (dispara un
   redeploy). Ver gotcha #11 en `docs/LECCIONES_Y_GOTCHAS.md`.
+- **`claude/prisma-dev`**: rama para el evolutivo de Prisma (features nuevas de `prisma/` en
+  construcción, todavía sin promover a producción). No está conectada a ningún despliegue. Cuando
+  una tanda esté lista, se promueve a `claude/prisma-web-app-3rw1uv` con el fast-forward de arriba.
+  Detalle completo de las tres ramas y cuándo usar cada una: `docs/RAMAS_Y_DESPLIEGUE.md`.
