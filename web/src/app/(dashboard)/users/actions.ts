@@ -188,6 +188,26 @@ export async function updateUser(
   }
 }
 
+// El admin fija una contraseña nueva directo (sin mail de reset: muchos
+// usuarios de tienda no revisan correo). El usuario la cambia si quiere desde
+// su perfil.
+export async function resetUserPassword(id: string, newPassword: string): Promise<ActionResult> {
+  const envErr = envProblem();
+  if (envErr) return { ok: false, error: envErr };
+  const adminErr = await ensureAdmin();
+  if (adminErr) return { ok: false, error: adminErr };
+  if (newPassword.length < 6) return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(id, { password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
 export async function deleteUser(id: string): Promise<ActionResult> {
   const envErr = envProblem();
   if (envErr) return { ok: false, error: envErr };

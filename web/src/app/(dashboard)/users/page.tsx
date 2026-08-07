@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Store, UserRole } from '@/lib/types';
-import { listUsers, createUser, updateUser, deleteUser, listLineOptions, updateUserLines, type UserRow } from './actions';
+import { listUsers, createUser, updateUser, deleteUser, listLineOptions, updateUserLines, resetUserPassword, type UserRow } from './actions';
 import PasswordInput from '@/components/PasswordInput';
 
 // El 'operario' de tienda usa AMBAS apps (Inventario y Repo) con el mismo
@@ -23,6 +23,10 @@ export default function UsersPage() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<UserRole>('operario');
   const [storeId, setStoreId] = useState<string>('');
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [resetPwd, setResetPwd] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await listUsers();
@@ -52,6 +56,22 @@ export default function UsersPage() {
     setPassword('');
     setFullName('');
     load();
+  }
+
+  function openReset(id: string) {
+    setResetId(id);
+    setResetPwd('');
+    setResetMsg(null);
+  }
+
+  async function onSaveReset(id: string) {
+    if (resetPwd.length < 6) { setResetMsg('Mínimo 6 caracteres.'); return; }
+    setResetBusy(true); setResetMsg(null);
+    const res = await resetUserPassword(id, resetPwd);
+    setResetBusy(false);
+    if (!res.ok) { setResetMsg(res.error); return; }
+    setResetId(null);
+    setResetPwd('');
   }
 
   return (
@@ -88,6 +108,7 @@ export default function UsersPage() {
             <th>Rol</th>
             <th>Tienda</th>
             <th>Línea responsable</th>
+            <th>Contraseña</th>
             <th></th>
           </tr>
         </thead>
@@ -147,6 +168,24 @@ export default function UsersPage() {
                 </select>
               </td>
               <td>
+                {resetId === u.id ? (
+                  <div className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <PasswordInput value={resetPwd} onChange={setResetPwd} autoComplete="new-password" />
+                    <button disabled={resetBusy} onClick={() => onSaveReset(u.id)}>
+                      {resetBusy ? 'Guardando…' : 'Guardar'}
+                    </button>
+                    <button className="secondary" disabled={resetBusy} onClick={() => setResetId(null)}>
+                      Cancelar
+                    </button>
+                    {resetMsg && <span className="neg" style={{ fontSize: 12 }}>{resetMsg}</span>}
+                  </div>
+                ) : (
+                  <button className="secondary" onClick={() => openReset(u.id)}>
+                    Restablecer
+                  </button>
+                )}
+              </td>
+              <td>
                 <button
                   className="secondary"
                   onClick={async () => {
@@ -164,7 +203,7 @@ export default function UsersPage() {
           ))}
           {users.length === 0 && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={7} className="muted">
                 Sin usuarios.
               </td>
             </tr>
@@ -179,6 +218,10 @@ export default function UsersPage() {
         <b>Línea responsable</b>: en qué línea(s) puede aceptar/denegar/contraproponer las propuestas
         de precio que llegan desde Prisma (bandeja en &quot;Propuestas de precio&quot;). Ctrl/Cmd+clic para
         elegir varias.
+      </p>
+      <p className="muted" style={{ fontSize: 12 }}>
+        <b>Restablecer contraseña</b>: fija una contraseña nueva directo, sin mandar mail (muchos
+        usuarios de tienda no revisan correo). Avisale la nueva contraseña por otro medio.
       </p>
     </div>
   );
