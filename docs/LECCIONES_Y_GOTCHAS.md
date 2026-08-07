@@ -123,6 +123,27 @@ como huérfanas con el id viejo) → `update` del `fixture_id` al id nuevo (matc
 por `scanned_at`) → re-agregar la FK. Combinar con el fix #9 (APK) para que no
 bloquee a las demás.
 
+**Agravante encontrado (El Sol, ago-2026):** el bug no era solo la FK — el
+equipo **nunca se recupera solo**, ni reintentando para siempre. `upsertFixtures()`
+(Room, `RackDao`) insertaba por `id` con `REPLACE`: si el mueble se recreó (id
+nuevo, mismo `barcode`), la fila **vieja nunca se borraba** del caché local,
+quedaba para siempre junto a la nueva. `findFixtureByBarcode()` no tenía
+`ORDER BY`, así que podía devolver cualquiera de las dos filas con ese barcode
+— si agarraba la vieja, **cada escaneo nuevo** (no solo los de antes de la
+recreación) seguía mandando el `fixture_id` viejo, y quedaba trabado para
+siempre aunque se reintentara sync manualmente mil veces. Se manifestó como
+"no sincroniza nada, ni probando de nuevo ahora mismo".
+
+**Fix de raíz (mobile, `RackDao.replaceFixturesForStore`):** cada `pullCatalog()`
+ahora **borra todos los muebles de la tienda en el caché local antes de volver a
+insertar** los que manda el servidor, en vez de solo upsertear por id. Así, la
+próxima vez que el equipo haga un pull exitoso (periódico, cada 15 min, o al
+loguearse), el caché se auto-corrige solo — ya no hace falta borrar datos de la
+app a mano cada vez que se recree un mueble. **Requiere APK nuevo** para tomar
+efecto en los equipos ya instalados; mientras tanto, recuperación inmediata:
+Ajustes → Apps → Rack One → Almacenamiento → Borrar datos (o desinstalar/
+reinstalar) + volver a loguear.
+
 ## #11 — Prisma despliega desde una rama distinta a `web/`/`supabase/`
 
 **Síntoma:** se hacen cambios en `prisma/` (o en algo que Prisma necesita en

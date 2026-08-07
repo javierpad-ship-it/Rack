@@ -129,7 +129,7 @@ class SyncWorker(
         val fixtures = api.fetchFixtures(token, storeId).map {
             com.rack.data.FixtureEntity(it.id, it.storeId, it.barcode, it.name, it.active)
         }
-        if (fixtures.isNotEmpty()) dao.upsertFixtures(fixtures)
+        if (fixtures.isNotEmpty()) dao.replaceFixturesForStore(storeId, fixtures)
     }
 
     companion object {

@@ -28,6 +28,26 @@ interface RackDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFixtures(fixtures: List<FixtureEntity>)
 
+    @Query("DELETE FROM fixtures WHERE storeId = :storeId")
+    suspend fun deleteFixturesForStore(storeId: String)
+
+    /**
+     * Reemplaza TODO el caché de muebles de la tienda por lo que acaba de llegar
+     * del servidor. Si un mueble se borró y recreó ahí (cambia su `id`, mismo
+     * `barcode`), un simple upsert por `id` nunca limpia la fila vieja: queda
+     * cacheada para siempre junto a la nueva, con el mismo barcode, y
+     * `findFixtureByBarcode` (sin ORDER BY) puede devolver cualquiera de las
+     * dos — si agarra la vieja, el equipo manda un `fixture_id` que el
+     * servidor ya no tiene y el sync de ese mueble queda trabado para siempre
+     * (gotcha #10). Borrar-y-reinsertar en cada pull evita que la caché quede
+     * desincronizada del catálogo real de la tienda.
+     */
+    @Transaction
+    suspend fun replaceFixturesForStore(storeId: String, fixtures: List<FixtureEntity>) {
+        deleteFixturesForStore(storeId)
+        upsertFixtures(fixtures)
+    }
+
     @Query("SELECT * FROM products WHERE sku = :sku LIMIT 1")
     suspend fun findProduct(sku: String): ProductEntity?
 
