@@ -50,6 +50,7 @@ export type VariantLookup = {
   empresa_id: string | null;
   empresa_nombre: string | null;
   rotacion: number;
+  rotacion_tienda: number;
   stock_variante: number;
   piso: number;
   almacen: number;

@@ -6,6 +6,11 @@ import { getSelectedStoreId } from '@/lib/store';
 
 export type ProposeResult = { ok: true } | { ok: false; error: string };
 
+// Mismo umbral que la pantalla de proponer: con IRP de cadena > 20% la
+// rotación ya es correcta y no se permite proponer un cambio de precio.
+// Se revalida acá (no solo en la UI) por si alguien postea directo.
+const IRP_ROTACION_CORRECTA = 20;
+
 export async function createProposal(input: {
   generic_code: string;
   sku: string | null;
@@ -19,6 +24,14 @@ export async function createProposal(input: {
   if (!(input.proposed_pvp > 0)) return { ok: false, error: 'Ingresa un PVP válido.' };
 
   const storeId = getSelectedStoreId();
+  const { data: rotData } = await supabase.rpc('generic_rotation', {
+    p_generic: input.generic_code,
+    p_store_id: storeId,
+  });
+  const rot = rotData as { cadena: number; tienda: number } | null;
+  if (rot && rot.cadena > IRP_ROTACION_CORRECTA) {
+    return { ok: false, error: `Rotación correcta en cadena (${rot.cadena}%) — no se permite proponer un cambio de precio.` };
+  }
   const { data: store } = await supabase.from('stores').select('sales_org').eq('id', storeId).single();
 
   // Responsable de línea (resp) del genérico. stock_snapshots.generic_code no

@@ -15,6 +15,10 @@ function swatch(color: string) {
   return SWATCH[k] ?? '#93a2c6';
 }
 
+// Con IRP de cadena > 20% la rotación ya es correcta: no se permite proponer
+// un cambio de precio (mismo umbral validado en /proponer).
+const IRP_ROTACION_CORRECTA = 20;
+
 // Semáforo de rotación (IRP del genérico, cadena) — 5 tramos.
 function rotBand(irp: number): { bg: string; fg: string; label: string } {
   if (irp > 30) return { bg: '#2E9E44', fg: '#ffffff', label: 'Rotación alta' };
@@ -103,6 +107,11 @@ export default async function FichaPage({ params }: { params: { sku: string } })
             </div>
 
             <div className="card">
+              <div className="row"><span className="muted">Rotación en esta tienda</span><b className="tnum">{r.rotacion_tienda}%</b></div>
+              <div className="row"><span className="muted">Rotación en cadena</span><b className="tnum">{r.rotacion}%</b></div>
+            </div>
+
+            <div className="card">
               <div className="eyebrow" style={{ marginBottom: 10 }}>Variante escaneada — en esta tienda</div>
               <div className="kpi-row">
                 <div className="kpi"><div className="n tnum">{r.stock_variante}</div><div className="l">Stock (Stk Fin)</div></div>
@@ -155,9 +164,17 @@ export default async function FichaPage({ params }: { params: { sku: string } })
               </div>
             )}
 
-            <Link className="btn primary" href={`/proponer/${encodeURIComponent(r.variante.generic_code ?? '')}?sku=${encodeURIComponent(r.variante.sku)}`}>
-              Proponer nuevo precio
-            </Link>
+            {r.rotacion > IRP_ROTACION_CORRECTA ? (
+              <div className="card" style={{ background: '#DFF3E1', color: '#14421c', textAlign: 'center' }}>
+                <p className="mini" style={{ color: 'inherit', margin: 0 }}>
+                  Rotación correcta en cadena ({r.rotacion}%) — no se permite proponer un cambio de precio.
+                </p>
+              </div>
+            ) : (
+              <Link className="btn primary" href={`/proponer/${encodeURIComponent(r.variante.generic_code ?? '')}?sku=${encodeURIComponent(r.variante.sku)}`}>
+                Proponer nuevo precio
+              </Link>
+            )}
             <Link className="btn ghost" href="/">Nueva consulta</Link>
           </>
         )}
