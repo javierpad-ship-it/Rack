@@ -93,6 +93,10 @@ Usado en `/alerts` (pestaña Operativas). Base `0008`.
 - `scan_coverage(store, week)` — muebles activos (sin ALMACÉN) y si tienen audit ESA semana.
   Indicador de "toca re-auditar", no del piso vigente.
 - `fixture_week_over_week`, `fixture_monthly_metrics`, `fixture_trends`, `unattributed_sales`.
+- `store_alerts(store, week, prev_week)` — alertas operativas de `/alerts`: `reposicion` (stock en
+  almacén sin piso), `mueble_sin_escanear`, `caida_venta` (>30 % vs semana previa) y
+  `reposicion_sospechosa` (reposición > 50 % de la última auditoría del mueble, o ≥ 20 u sin
+  auditoría previa: casi seguro un reconteo cargado desde la app Repo). Base `0008`, `0071`.
 
 ## Prisma (rotación)
 

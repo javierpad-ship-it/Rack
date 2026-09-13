@@ -16,6 +16,7 @@ const LABEL: Record<string, string> = {
   reposicion: 'Reposición',
   mueble_sin_escanear: 'Mueble sin escanear',
   caida_venta: 'Caída de venta',
+  reposicion_sospechosa: 'Reposición sospechosa',
 };
 
 const SEV_COLOR: Record<string, string> = {

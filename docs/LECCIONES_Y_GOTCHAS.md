@@ -245,7 +245,10 @@ ventas del 4/9 en adelante aún no importadas y diferencias de conteo/etiqueta, 
 **Reglas:** (a) muebles nunca se borran; (b) al tocar `sales`/atribución, verificar `import_logs`
 tras cada import; (c) cualquier RPC largo que corra con service-role debe caber en 120 s o
 partirse por semana; (d) `list_migrations` de Supabase NO refleja lo aplicado a mano por SQL
-Editor — verificar con `pg_proc`/`information_schema` antes de asumir que una migración existe.
+Editor — verificar con `pg_proc`/`information_schema` antes de asumir que una migración existe;
+(e) los reconteos cargados como reposición se detectan en `/alerts` → "Reposición sospechosa"
+(`store_alerts`, 0071): la primera corrida encontró RACK 04 (297 u vs 295) y RACK 07 (295 u vs
+103) en Prolongación — la corrección es cambiar esa sesión de `restock` a `audit`.
 
 ## Conector Supabase (operativo, no del producto)
 
