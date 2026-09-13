@@ -1,0 +1,313 @@
+<title>Reposición y ALMACÉN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,400;100,600;100,900&display=swap">
+<style>
+  :root {
+    --azul: #008CFF;
+    --azul-oscuro: #0070CC;
+    --crema: #EFEFE8;
+    --card: #FFFFFF;
+    --ink: #212121;
+    --ink-2: #424242;
+    --linea: #D9D9CF;
+    --ok: #AADE88;
+    --ok-ink: #1F4A12;
+    --info: #68D8D9;
+    --info-ink: #0B3F40;
+    --no: #F03D00;
+    --no-suave: #FDE4DA;
+    --no-ink: #7A1E00;
+    --chip: #E3F1FF;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --crema: #141A22;
+      --card: #1C2430;
+      --ink: #EFEFE8;
+      --ink-2: #B8C0CC;
+      --linea: #2E3947;
+      --ok: #3E6B2B;
+      --ok-ink: #D7F2C4;
+      --info: #1E5F60;
+      --info-ink: #C6F1F1;
+      --no-suave: #4A1C0E;
+      --no-ink: #FFC9B5;
+      --chip: #1B3A57;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --crema: #141A22;
+    --card: #1C2430;
+    --ink: #EFEFE8;
+    --ink-2: #B8C0CC;
+    --linea: #2E3947;
+    --ok: #3E6B2B;
+    --ok-ink: #D7F2C4;
+    --info: #1E5F60;
+    --info-ink: #C6F1F1;
+    --no-suave: #4A1C0E;
+    --no-ink: #FFC9B5;
+    --chip: #1B3A57;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--crema);
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .header {
+    background: var(--azul);
+    color: #EFEFE8;
+    padding: 28px 20px 30px;
+  }
+  .header-inner { max-width: 760px; margin: 0 auto; }
+  .marca {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 900; font-size: 22px; letter-spacing: -0.01em;
+  }
+  .marca .brillo { font-size: 18px; line-height: 1; }
+  .eyebrow {
+    margin-top: 22px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    opacity: 0.85;
+  }
+  h1 {
+    margin: 6px 0 8px;
+    font-weight: 900; font-size: clamp(30px, 6vw, 44px); line-height: 1.05;
+    letter-spacing: -0.02em; text-wrap: balance;
+  }
+  .header p { margin: 0; max-width: 60ch; font-size: 17px; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 8px 20px 40px; }
+  section { padding-block: 26px; border-bottom: 1px solid var(--linea); }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    margin: 0 0 12px;
+    font-weight: 900; font-size: 24px; letter-spacing: -0.015em; line-height: 1.15;
+    text-wrap: balance;
+  }
+  h3 { margin: 0 0 6px; font-weight: 900; font-size: 17px; }
+  p { margin: 0 0 12px; max-width: 65ch; }
+  .muted { color: var(--ink-2); }
+  small, .nota { font-size: 14px; color: var(--ink-2); }
+
+  .formula {
+    background: var(--card); border: 1px solid var(--linea); border-radius: 8px;
+    padding: 16px 18px; margin: 4px 0 8px;
+  }
+  .formula .linea-f {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
+    font-weight: 900; font-size: 17px;
+  }
+  .formula .op { color: var(--azul); font-weight: 900; }
+  .formula .t { color: var(--ink-2); font-weight: 400; font-size: 14px; }
+
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .dos { grid-template-columns: 1fr; } }
+  .app {
+    background: var(--card); border: 1px solid var(--linea); border-radius: 8px;
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .app .tag {
+    align-self: flex-start;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .tag-inv { background: var(--chip); color: var(--azul-oscuro); }
+  .tag-repo { background: var(--ok); color: var(--ok-ink); }
+  :root[data-theme="dark"] .tag-inv { color: #8CC8FF; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag-inv { color: #8CC8FF; } }
+  .app ul { margin: 0; padding-left: 18px; }
+  .app li { margin: 2px 0; }
+
+  ol.pasos { margin: 0; padding: 0; list-style: none; counter-reset: paso; display: grid; gap: 10px; }
+  ol.pasos li {
+    counter-increment: paso;
+    display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start;
+    background: var(--card); border: 1px solid var(--linea); border-radius: 8px;
+    padding: 12px 14px;
+  }
+  ol.pasos li::before {
+    content: counter(paso);
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--azul); color: #EFEFE8;
+    font-weight: 900; font-size: 15px;
+    display: grid; place-items: center;
+  }
+  .kbd {
+    display: inline-block; padding: 1px 7px; border-radius: 5px;
+    background: var(--chip); color: var(--ink); font-weight: 600; font-size: 14px;
+    border: 1px solid var(--linea);
+  }
+  .etiqueta {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 14px; border: 2px dashed var(--azul); border-radius: 6px;
+    background: var(--card); font-weight: 900; letter-spacing: 0.08em;
+  }
+  .etiqueta small { letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+
+  .bloque { display: grid; gap: 14px; margin-top: 10px; }
+  .caso {
+    border-radius: 8px; padding: 14px 16px;
+    display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  }
+  .caso .icono { font-size: 20px; line-height: 1.2; font-weight: 900; }
+  .caso-ok { background: var(--ok); color: var(--ok-ink); }
+  .caso-no { background: var(--no-suave); color: var(--no-ink); }
+  .caso-ok .icono { color: var(--ok-ink); }
+  .caso-no .icono { color: var(--no); }
+  .caso p { margin: 0; color: inherit; }
+  .caso b { font-weight: 900; }
+
+  table {
+    width: 100%; border-collapse: collapse; background: var(--card);
+    border: 1px solid var(--linea); border-radius: 8px; overflow: hidden;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--linea); }
+  th { background: var(--azul); color: #EFEFE8; font-weight: 600; font-size: 13px; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { text-align: right; font-weight: 900; }
+  td.total { font-weight: 900; color: var(--azul); }
+  .tabla-wrap { overflow-x: auto; }
+
+  .alerta-box {
+    background: var(--card); border: 1px solid var(--linea); border-left: 6px solid var(--no);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .alerta-box .titulo { font-weight: 900; }
+
+  footer {
+    text-align: center; padding: 18px 20px 30px;
+    color: var(--ink-2); font-size: 13px; letter-spacing: 0.06em;
+  }
+  footer .brillo { color: var(--azul); }
+  @media (prefers-reduced-motion: no-preference) {
+    .header .brillo { animation: titila 3.6s ease-in-out infinite; }
+    @keyframes titila { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  }
+</style>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="marca"><span>Lukers</span><span class="brillo">✦</span><span style="font-weight:400;font-size:16px;opacity:.9">Rack One</span></div>
+    <div class="eyebrow">Instructivo para tienda</div>
+    <h1>Reposición y ALMACÉN</h1>
+    <p>Cómo registrar lo que entra y sale del piso de venta para que el stock por mueble sea real, sin contar de más ni de menos.</p>
+  </div>
+</div>
+
+<main>
+  <section>
+    <h2>La idea en una línea</h2>
+    <p>El sistema calcula cuánto hay en cada mueble así:</p>
+    <div class="formula">
+      <div class="linea-f">
+        <span>Última auditoría</span><span class="op">+</span>
+        <span>lo repuesto al mueble</span><span class="op">−</span>
+        <span>lo vendido</span><span class="op">−</span>
+        <span>lo devuelto al ALMACÉN</span>
+      </div>
+      <div class="t" style="margin-top:6px">Las ventas las descuenta solo el sistema (vienen del POS). Lo que vos registrás con la app es lo repuesto y lo devuelto.</div>
+    </div>
+    <p class="muted">Si un movimiento no se escanea, el sistema no se entera: la prenda sigue figurando donde estaba.</p>
+  </section>
+
+  <section>
+    <h2>Dos apps, dos trabajos distintos</h2>
+    <div class="dos">
+      <div class="app">
+        <span class="tag tag-inv">Rack One · Inventario</span>
+        <h3>Contar TODO el mueble</h3>
+        <ul>
+          <li>Auditoría completa, una vez al mes (o cuando central lo pida).</li>
+          <li>Se escanea cada prenda que hay en el mueble.</li>
+          <li>Reemplaza el conteo anterior: el mueble queda con ese total.</li>
+        </ul>
+      </div>
+      <div class="app">
+        <span class="tag tag-repo">Rack One · Repo</span>
+        <h3>Registrar solo lo que se mueve</h3>
+        <ul>
+          <li>Reposiciones del día a día.</li>
+          <li>Se escanea únicamente lo que agregás o retirás.</li>
+          <li>Se suma (o se resta) al conteo que ya tenía el mueble.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="nota" style="margin-top:12px">La diferencia importa: si contás todo el mueble desde <b>Repo</b>, el sistema lo suma al conteo anterior y el mueble queda con el doble.</p>
+  </section>
+
+  <section>
+    <h2>Reponer al piso (del almacén al mueble)</h2>
+    <p class="muted">App <b>Repo</b>. Cuando sacás mercadería del almacén y la colgás en un mueble.</p>
+    <ol class="pasos">
+      <li><div>Escaneá la <b>etiqueta del mueble</b> donde vas a colgar la ropa (ej. <span class="kbd">L000410003</span> · RACK 03). La pantalla dice <em>“Reponiendo en: RACK 03”</em>.</div></li>
+      <li><div>Escaneá <b>solo las prendas que estás agregando</b>, una por una. No escanees lo que ya estaba en el mueble.</div></li>
+      <li><div>Tocá <span class="kbd">GUARDAR</span>. Va a decir “Guardado. Se enviará automáticamente al haber señal”.</div></li>
+      <li><div>Si el chip de arriba muestra <span class="kbd">⏳ N por enviar</span> por más de unos minutos, tocá <span class="kbd">Sincronizar</span>. Con señal debería pasar a “✓ Al día”.</div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Devolver al almacén (del mueble al almacén)</h2>
+    <p class="muted">App <b>Repo</b>. Cuando retirás ropa del piso: liquidación, cambio de temporada, sobrestock, prendas falladas.</p>
+    <div style="margin:8px 0 14px">
+      <span class="etiqueta">ALMACÉN<small>una etiqueta por tienda</small></span>
+    </div>
+    <ol class="pasos">
+      <li><div>Escaneá la etiqueta <b>ALMACÉN</b> de la tienda (está pegada en la puerta del depósito; si no está, pedila: se imprime desde Rack One → Etiquetas).</div></li>
+      <li><div>Escaneá las <b>prendas que estás retirando</b> del piso.</div></li>
+      <li><div>Tocá <span class="kbd">GUARDAR</span>. El sistema las descuenta del mueble donde estaban.</div></li>
+    </ol>
+    <p class="nota" style="margin-top:12px"><b>Traslado entre muebles</b> (sacar de PARED A03 y colgar en RACK 05): primero “Devolver al almacén” con esas prendas, después “Reponer al piso” en RACK 05. Dos guardados.</p>
+  </section>
+
+  <section>
+    <h2>Lo que sí y lo que no</h2>
+    <div class="bloque">
+      <div class="caso caso-ok"><div class="icono">✓</div><p><b>Repo para movimientos chicos.</b> Repusiste 12 poleras en RACK 03 → escaneás esas 12 y guardás.</p></div>
+      <div class="caso caso-ok"><div class="icono">✓</div><p><b>Inventario para contar todo.</b> Te piden auditar RACK 07 → abrís Inventario, escaneás cada prenda del mueble y guardás.</p></div>
+      <div class="caso caso-no"><div class="icono">✕</div><p><b>No cuentes todo el mueble desde Repo.</b> Pasó en Prolongación Iquitos: RACK 07 tenía 103 prendas auditadas; alguien lo recontó completo desde Repo (295) y el sistema quedó con 398. El reporte lo marca como “Reposición sospechosa”.</p></div>
+      <div class="caso caso-no"><div class="icono">✕</div><p><b>No retires ropa sin escanear ALMACÉN.</b> Si la sacás del piso y no lo registrás, el mueble sigue figurando lleno y el reporte de piso queda inflado.</p></div>
+      <div class="caso caso-no"><div class="icono">✕</div><p><b>No escanees la etiqueta de otro mueble “porque está más cerca”.</b> La venta y el stock se atribuyen al mueble que escaneaste.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ejemplo con números</h2>
+    <p class="muted">RACK 03, una semana cualquiera.</p>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Qué pasó</th><th>Con qué app</th><th style="text-align:right">Prendas</th><th style="text-align:right">Piso del mueble</th></tr></thead>
+        <tbody>
+          <tr><td>Auditoría completa del 8/9</td><td>Inventario</td><td class="n">166</td><td class="n total">166</td></tr>
+          <tr><td>Repusiste poleras del almacén</td><td>Repo → RACK 03</td><td class="n">+11</td><td class="n total">177</td></tr>
+          <tr><td>Se vendieron (lo descuenta el sistema)</td><td>POS</td><td class="n">−9</td><td class="n total">168</td></tr>
+          <tr><td>Retiraste falladas al depósito</td><td>Repo → ALMACÉN</td><td class="n">−4</td><td class="n total">164</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota" style="margin-top:10px">Si en vez de “+11” hubieras recontado el rack entero desde Repo (177 prendas), el sistema mostraría 343.</p>
+  </section>
+
+  <section>
+    <h2>Para encargados: la alerta “Reposición sospechosa”</h2>
+    <div class="alerta-box">
+      <div class="titulo">Rack One → Alertas → pestaña operativa</div>
+      <p style="margin-top:6px">Aparece cuando una reposición supera la mitad de la última auditoría del mueble (o tiene 20 prendas o más en un mueble sin auditar). Casi siempre es un conteo completo hecho desde Repo.</p>
+      <p style="margin:0"><b>Qué hacer:</b> confirmá con quien escaneó. Si fue un reconteo, repetilo desde <b>Inventario</b> el mismo día (eso reemplaza el número) y avisá a central para que descarte la reposición equivocada.</p>
+    </div>
+    <p class="nota" style="margin-top:12px">Rutina sugerida: auditoría completa de cada mueble una vez al mes con Inventario; el resto del mes, solo Repo. Así el número del piso nunca se aleja mucho de la realidad.</p>
+  </section>
+</main>
+
+<footer>Mejores marcas <span class="brillo">✦</span> Mejores precios</footer>
