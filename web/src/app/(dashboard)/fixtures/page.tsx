@@ -66,9 +66,22 @@ export default function FixturesPage() {
     load();
   }
 
-  async function remove(id: string) {
-    if (!confirm('¿Eliminar mueble?')) return;
-    await supabase.from('fixtures').delete().eq('id', id);
+  // Un mueble con escaneos NUNCA se borra (gotcha #10/#13): sus sesiones
+  // quedarían huérfanas y el piso se duplicaría al recrearlo. La base lo
+  // impide (FK ON DELETE RESTRICT); acá se explica y se ofrece desactivar.
+  async function remove(f: Fixture) {
+    if (f.is_warehouse) {
+      setError('El ALMACÉN es una ubicación fija de la tienda: no se puede eliminar.');
+      return;
+    }
+    if (!confirm(`¿Eliminar "${f.name}"? Solo se puede si nunca fue escaneado; si tiene escaneos, se desactiva.`)) return;
+    setError(null);
+    const { error } = await supabase.from('fixtures').delete().eq('id', f.id);
+    if (error) {
+      // 23503 = viola la FK: hay sesiones de escaneo apuntando a este mueble.
+      await supabase.from('fixtures').update({ active: false }).eq('id', f.id);
+      setError(`"${f.name}" tiene escaneos históricos: no se eliminó, quedó desactivado (no se puede escanear, pero su historial se conserva).`);
+    }
     load();
   }
 
@@ -128,18 +141,31 @@ export default function FixturesPage() {
             <tr key={f.id}>
               <td><code>{f.barcode}</code></td>
               <td>{f.floor}</td>
-              <td>{f.name}</td>
+              <td>
+                {f.name}
+                {f.is_warehouse && (
+                  <span className="pill" style={{ marginLeft: 6 }} title="Ubicación fija: reponer hacia acá saca unidades del piso de venta">
+                    ALMACÉN
+                  </span>
+                )}
+              </td>
               <td className="muted">
                 {f.pin_x != null ? `${f.pin_x.toFixed(2)}, ${f.pin_y?.toFixed(2)}` : 'sin ubicar'}
               </td>
               <td>{f.active ? 'Activo' : 'Inactivo'}</td>
               <td className="row">
-                <button className="secondary" onClick={() => toggleActive(f)}>
-                  {f.active ? 'Desactivar' : 'Activar'}
-                </button>
-                <button className="secondary" onClick={() => remove(f.id)}>
-                  Eliminar
-                </button>
+                {f.is_warehouse ? (
+                  <span className="muted" style={{ fontSize: 12 }}>fijo</span>
+                ) : (
+                  <>
+                    <button className="secondary" onClick={() => toggleActive(f)}>
+                      {f.active ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button className="secondary" onClick={() => remove(f)}>
+                      Eliminar
+                    </button>
+                  </>
+                )}
               </td>
             </tr>
           ))}
@@ -152,6 +178,12 @@ export default function FixturesPage() {
           )}
         </tbody>
       </table>
+      <p className="muted" style={{ fontSize: 12 }}>
+        Los muebles con escaneos no se eliminan (se desactivan) para no perder el historial ni
+        duplicar el piso. <b>ALMACÉN</b>: etiqueta fija de la tienda (imprimila desde Etiquetas); en
+        la app Repo, escanearla y luego los productos registra mercadería que <b>sale del piso</b> y
+        vuelve al almacén.
+      </p>
     </div>
   );
 }

@@ -18,17 +18,25 @@ antes de tocar import/SKU/semana/sync/reportes). Mantenerlos al día al agregar 
 
 ## Reglas de negocio clave (no romper)
 
-- **Atribución de ventas por SKU exacto.** Si un SKU está en varios muebles esa semana, la venta va al
-  **primer mueble escaneado** (orden por `scanned_at`). Implementado en `attribute_sales()`
-  (`supabase/migrations/0002_attribution.sql`).
+- **Atribución de ventas por SKU (normalizado).** Si el SKU se escaneó **esa misma semana**, la venta
+  va al **primer mueble escaneado** de la semana (orden por `scanned_at`); si no, al **último mueble
+  donde se vio el SKU** (auditoría o reposición) en una semana anterior — la auditoría es mensual y
+  la regla "misma semana" sola dejaba el 100 % de las ventas sin mueble (gotcha #13). El ALMACÉN nunca
+  recibe venta. Implementado en `attribute_sales()` (`supabase/migrations/0070_*.sql`).
 - **Almacén deducido** = stock total de la tienda − unidades escaneadas en piso (`store_warehouse()`).
 - **Semana = ISO week** `IYYY-"W"IW` (ej. `2026-W26`). Hay tres implementaciones que DEBEN coincidir:
   `iso_week()` (SQL), `web/src/lib/week.ts`, `mobile/.../util/IsoWeek.kt`.
 - **Sync idempotente** por `client_uid` en `scan_sessions`.
 - **Piso de venta = las ubicaciones (muebles) creadas en la tienda.** Lo escaneado en esos muebles es
-  el piso. Cada tienda tiene además una ubicación especial **`almacén`** (se crea automáticamente):
-  lo que se "repone a almacén" es mercadería que **sale del piso de venta y vuelve al almacén**. El
-  almacén deducido (`store_warehouse()`) sigue siendo stock total − piso escaneado.
+  el piso. Cada tienda tiene además una ubicación especial **`ALMACÉN`** (`fixtures.is_warehouse`,
+  la crea la base al crear la tienda; `ensure_warehouse_fixture()`): lo que se "repone" escaneando esa
+  etiqueta en la app Repo es mercadería que **sale del piso de venta y vuelve al almacén** — se
+  descuenta del piso en `fixture_floor_vigente()`. Piso vigente = último audit del mueble + reposiciones
+  posteriores − ventas atribuidas − reposiciones al ALMACÉN. El almacén deducido (`store_warehouse()`)
+  sigue siendo stock total − piso.
+- **Los muebles NUNCA se borran y recrean**: se editan en su lugar o se desactivan. `scan_sessions`
+  tiene FK `ON DELETE RESTRICT` a `fixtures`; borrar un mueble con escaneos deja auditorías huérfanas
+  y duplica el piso (gotchas #10 y #13).
 - **Códigos:** `código genérico`/artículo = `article_code` (CODIGO_ARTICULO); `SKU`/variante =
   `sku` (CODIGO_VARIANTE). El SKU numérico se normaliza **sin ceros a la izquierda** al importar
   (`normSku()` en `web/src/lib/import/parseExcel.ts`) para que ventas y stock siempre crucen.

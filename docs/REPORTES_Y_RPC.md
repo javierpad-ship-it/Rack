@@ -78,11 +78,27 @@ Usado en `/alerts` (pestaña Operativas). Base `0008`.
 
 ## Piso / almacén / muebles (Fase 1)
 
+- `fixture_floor_vigente(store) → setof (fixture_id, sku, units)` — **fuente única del piso
+  "ahora"** (base `0065`, semántica final `0070`): por mueble EXISTENTE (huérfanos y ALMACÉN
+  excluidos) = último audit + reposiciones posteriores − ventas atribuidas (semanas > audit)
+  − reposiciones al ALMACÉN (greedy: primero al mueble con más unidades del SKU). SKU normalizado.
+- `ensure_warehouse_fixture(store) → uuid` — crea/devuelve el mueble ALMACÉN
+  (`fixtures.is_warehouse`); lo dispara un trigger al crear la tienda. Base `0070`.
 - `store_warehouse(store, week) → setof` — por SKU: total, piso, almacén deducido.
-- `attribute_sales(store, week)` — atribuye ventas al primer mueble escaneado.
-- `recalc_fixture_metrics(store, week)` — `weekly_fixture_metrics` (piso = escaneado − vendido).
-- `fixture_week_over_week`, `fixture_monthly_metrics`, `fixture_trends`,
-  `scan_coverage`, `unattributed_sales`.
+- `attribute_sales(store, week)` — atribuye ventas por SKU normalizado: si se escaneó esa semana,
+  al **primer mueble** de la semana; si no, al **último mueble donde se vio el SKU** (audit o
+  reposición, semanas anteriores). Nunca al ALMACÉN. Semántica `0070` (gotcha #13).
+- `recalc_fixture_metrics(store, week)` — `weekly_fixture_metrics` (piso = escaneado − vendido);
+  excluye el ALMACÉN.
+- `scan_coverage(store, week)` — muebles activos (sin ALMACÉN) y si tienen audit ESA semana.
+  Indicador de "toca re-auditar", no del piso vigente.
+- `fixture_week_over_week`, `fixture_monthly_metrics`, `fixture_trends`, `unattributed_sales`.
+
+## Prisma (rotación)
+
+- `generic_rotation(generic, store, days=30) → {cadena, tienda}` — IRP del genérico en cadena y
+  en la tienda (ventas/(ventas+stock)×100). Lo usan `prisma_variant_lookup` y la pantalla de
+  proponer precio (bloquea propuestas con IRP cadena > 20 %). Base `0069`.
 
 ## Utilidad / seguridad
 

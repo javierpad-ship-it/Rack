@@ -106,12 +106,16 @@ leer) para que ventas ↔ stock ↔ escaneo siempre crucen. Ver gotchas #1 y #2.
 1. **SKU = `CODIGO_VARIANTE` sin ceros a la izquierda.** `normSku()` al importar
    (web) y `norm_sku()` **al leer** en las funciones que cruzan escaneo/stock/venta.
    (Ver gotcha #1 — nunca volver a normalizar `scan_lines` al escribir.)
-2. **Piso de venta = lo escaneado en los muebles.** Almacén = stock total − piso.
+2. **Piso de venta = lo escaneado en los muebles**, "vigente" (`fixture_floor_vigente`):
+   último audit + reposiciones − ventas atribuidas − reposiciones al **ALMACÉN** (ubicación
+   fija por tienda, `fixtures.is_warehouse`). Almacén deducido = stock total − piso. Los
+   muebles **nunca se borran** (FK RESTRICT; se desactivan). Gotchas #10 y #13.
 3. **Semana comercial** (domingo→sábado) vía `week_calendar` + `comm_week()`. Tres
    implementaciones deben coincidir: SQL, `web/src/lib/week.ts`, `mobile IsoWeek.kt`.
 4. **IRP** = ventas(und) / (ventas + stock) × 100. Proyección por regla de 3
    (días transcurridos). **Margen %** = Σmargen / Σventa × 100.
-5. **Atribución de ventas** por SKU exacto al **primer mueble escaneado** de la semana.
+5. **Atribución de ventas** por SKU normalizado: misma semana → **primer mueble escaneado**;
+   si no → **último mueble donde se vio el SKU** (auditoría mensual). Base `0070`.
 6. Operaciones masivas en la web usan **service-role** desde Server Actions.
 7. Roles y permisos viven en **RLS**, no en el cliente.
 

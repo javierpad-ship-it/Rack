@@ -196,6 +196,57 @@ sesión manualmente y volver a loguear en el equipo afectado — los escaneos
 pendientes ya guardados localmente no se pierden y suben solos apenas hay
 sesión válida. **Requiere APK nuevo** (CI) para que el fix tome efecto solo.
 
+## #13 — Piso inflado en todas las tiendas: huérfanas + ventas nunca descontadas + recálculo cortado
+
+**Síntoma (sep-2026):** "no está bajando del stock las unidades vendidas" y "se duplicó el
+stock de piso" en Prolongación Iquitos. Al medirlo, el piso superaba al stock del POS en
+**todas** las tiendas (Prolongación: 2.973 u de más, 47 % de los SKUs). Ejemplo trazado: SKU
+`1000103460001` → piso 52 = 31 (PARED B03, auditoría real) + 21 (auditoría del 6/7 sobre un
+mueble que ya no existía).
+
+**Cuatro causas que se sumaban (diagnóstico en `supabase/migrations/0070_*.sql`):**
+1. **Auditorías huérfanas contadas como piso.** Los muebles de Prolongación se borraron y
+   recrearon el 24/8 (pantalla `/fixtures`, borrado duro con un confirm). Quedaron 29 auditorías
+   (3.602 u) apuntando a ids inexistentes; `fixture_floor_vigente()` no filtraba por muebles
+   existentes. **La FK de `scan_sessions.fixture_id` no existía**: se soltó en la recuperación
+   del gotcha #10 y nunca se repuso, así que nada avisaba.
+2. **Las ventas nunca se descontaban.** `attribute_sales()` solo asignaba mueble si el SKU se
+   escaneó **esa misma semana** (incompatible con auditoría mensual) y comparaba SKU crudo
+   contra normalizado (4 % de las lecturas vienen con ceros a la izquierda). Resultado medido:
+   **100 % de las atribuciones sin mueble en 7 de 11 tiendas**, <12 % en las otras 4. Sin
+   `fixture_id`, el `sold` de `fixture_floor_vigente()` no resta nada.
+3. **Nada sacaba unidades del piso.** La ubicación "almacén" descrita en CLAUDE.md no existía en
+   datos; "reponer a almacén" no restaba. Entre auditorías el piso solo subía (y un reconteo
+   cargado como reposición se suma: RACK 07 tenía 296 u "repuestas" sobre 103 auditadas).
+4. **Recálculo de ventas cortado desde el 18/8.** `sales_daily` estaba al 3/9, pero `sales` y
+   `sales_attribution` terminaban en la W33. El import del 4/9 insertó los diarios y **murió en
+   `recompute_sales_range`** ("canceling statement due to statement timeout"): corre por
+   PostgREST con `service_role`, que hereda el `statement_timeout = 8s` de `authenticator` — el
+   30 s de la 0026 solo cubría `anon`/`authenticated`. Además `comm_week(sale_date)` en el WHERE
+   no usaba índice. Pista para detectarlo: `import_logs` sin fila `sales_daily` pero
+   `sales_daily.created_at` reciente (el log se escribe solo si el recálculo termina).
+
+**Fix (0070):** `fixture_floor_vigente()` solo cuenta muebles existentes (no almacén) y resta lo
+repuesto al ALMACÉN; FK `scan_sessions.fixture_id` **NOT VALID + ON DELETE RESTRICT** (tolera
+huérfanas históricas, impide nuevas y bloquea borrar muebles con escaneos; `/fixtures` desactiva
+en vez de borrar); ubicación **ALMACÉN por tienda** (`fixtures.is_warehouse`, trigger + backfill,
+etiqueta imprimible desde Etiquetas); `attribute_sales()` con regla **"último mueble donde se vio
+el SKU"** (misma semana → primer mueble, regla histórica) y `norm_sku()` en ambos lados;
+`recompute_sales_week()` filtra por rango de fechas (índice) y `service_role` con
+`statement_timeout = 120s`; `scan_coverage`/`recalc_fixture_metrics` excluyen el almacén.
+También se descubrió que la **0021 nunca se aplicó** (`weekly_fixture_metrics.remaining_units` no
+existía) — se agrega en 0070.
+
+**Reparación de datos:** recálculo W27→hoy en las 10 tiendas con ventas (~1 s por tienda-semana).
+Prolongación pasó de 2.973 a 732 u de exceso; huérfanas contadas: 0; atribución con mueble en
+W35: 68 % (antes 0 %). El exceso restante en tiendas con auditoría reciente (Jirón, El Sol) son
+ventas del 4/9 en adelante aún no importadas y diferencias de conteo/etiqueta, no un bug.
+
+**Reglas:** (a) muebles nunca se borran; (b) al tocar `sales`/atribución, verificar `import_logs`
+tras cada import; (c) cualquier RPC largo que corra con service-role debe caber en 120 s o
+partirse por semana; (d) `list_migrations` de Supabase NO refleja lo aplicado a mano por SQL
+Editor — verificar con `pg_proc`/`information_schema` antes de asumir que una migración existe.
+
 ## Conector Supabase (operativo, no del producto)
 
 En sesiones de chat el conector MCP a veces figura `enabledInChat: false` (apagado

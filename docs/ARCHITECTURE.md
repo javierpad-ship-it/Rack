@@ -44,13 +44,20 @@ Se usa **ISO week** representada como texto `IIII-WNN` (ej. `2026-W26`), calcula
 
 ## Lógica de atribución
 
-Implementada en `supabase/migrations/0002_attribution.sql` como
-`attribute_sales(p_store_id, p_week)`:
+Implementada originalmente en `supabase/migrations/0002_attribution.sql`; semántica vigente en
+`0070_piso_integridad_y_atribucion.sql` como `attribute_sales(p_store_id, p_week)`:
 
-1. Por cada `sales(sku)` de esa tienda/semana, ubicar el **primer** `scan_session`
-   (orden `scanned_at`) que contenga ese SKU → ese es el mueble adjudicado.
+1. Por cada `sales(sku)` de esa tienda/semana (SKU normalizado con `norm_sku`), ubicar el mueble:
+   si el SKU se escaneó **esa semana**, el **primer** `scan_session` de la semana (orden
+   `scanned_at`); si no, el **último** `scan_session` (auditoría o reposición) de cualquier semana
+   anterior donde apareció el SKU. El ALMACÉN nunca es candidato. (La regla "solo misma semana"
+   dejaba casi todas las ventas sin mueble con auditoría mensual — gotcha #13.)
 2. Insertar/reemplazar filas en `sales_attribution`.
 3. Recalcular `weekly_fixture_metrics` (venta por mueble, stock expuesto, rotación).
+
+El piso "ahora" lo da `fixture_floor_vigente(p_store_id)` (`0065`/`0070`): último audit del mueble
++ reposiciones posteriores − ventas atribuidas en semanas posteriores − reposiciones al ALMACÉN.
+Solo cuenta muebles existentes (`scan_sessions.fixture_id` tiene FK `ON DELETE RESTRICT`).
 
 `recalc_store_warehouse(p_store_id, p_week)` deduce el almacén:
 `store_stock.total_units − Σ scan_lines.cantidad del piso`.

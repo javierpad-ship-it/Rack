@@ -41,11 +41,17 @@ Solo lectura de **Reportes** y **Dashboard** de todas las tiendas.
 ## Glosario
 - **Mueble (fixture):** exhibidor físico con código de barras y posición (pin) en el plano.
 - **Sesión de escaneo:** relevamiento de un mueble en una semana (SKU + cantidad).
-- **Atribución:** asignación de una venta al mueble donde se escaneó ese SKU; si está en varios, al
-  **primer mueble escaneado** de la semana.
+- **Atribución:** asignación de una venta al mueble donde se vio ese SKU: si se escaneó esa misma
+  semana, al **primer mueble escaneado** de la semana; si no, al **último mueble** donde apareció
+  (auditoría o reposición anterior).
 - **Rotación:** unidades vendidas / stock expuesto (lo escaneado en el mueble).
+- **Piso vigente:** último conteo (auditoría) del mueble + reposiciones posteriores − ventas − lo que
+  se repuso al ALMACÉN.
+- **ALMACÉN:** etiqueta fija de cada tienda (se imprime desde Etiquetas). En la app Repo, escanearla
+  y luego los productos registra mercadería que **sale del piso** y vuelve al almacén.
 - **Almacén (deducido):** stock total de la tienda − unidades en piso.
-- **Semana:** semana ISO (ej. `2026-W26`).
-- **Ventas sin mueble:** SKUs vendidos que no se escanearon en ningún mueble esa semana.
+- **Semana:** semana comercial domingo→sábado (ej. `2026-W26`).
+- **Ventas sin mueble:** SKUs vendidos que nunca se escanearon en ningún mueble (ni antes ni esa
+  semana): se vendieron desde el almacén o no se auditaron.
 - **Proyección mensual:** venta acumulada del mes extrapolada a fin de mes (lineal por días corridos).
   La rotación mensual usa el último mueble escaneado y el último stock expuesto del mes.

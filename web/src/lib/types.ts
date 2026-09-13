@@ -44,6 +44,9 @@ export interface Fixture {
   pin_x: number | null;
   pin_y: number | null;
   active: boolean;
+  // Ubicación especial ALMACÉN (una por tienda, la crea la base). Reponer
+  // hacia ella saca unidades del piso. No se audita ni se borra.
+  is_warehouse: boolean;
   created_at: string;
 }
 
