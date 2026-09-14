@@ -115,20 +115,40 @@ export async function generateExport(
     .single();
   if (eErr) return { ok: false, error: eErr.message };
 
+  // Prisma lee el precio vigente por EMPRESA (generic_price_info_empresa), no
+  // por Org. Cada Org SAP corresponde a una empresa (empresas.codigo_sap); si
+  // el precio se grabara solo con sales_org, la app seguiría mostrando el PVP
+  // viejo después de exportar (pasó con 877 precios — gotcha #14).
+  const { data: empresas, error: eqErr } = await admin.from('empresas').select('id, codigo_sap');
+  if (eqErr) return { ok: false, error: eqErr.message };
+  const empresaByOrg = new Map((empresas ?? []).map((e) => [e.codigo_sap as string, e.id as string]));
+  const sinEmpresa = useOrgs.filter((o) => !empresaByOrg.has(o));
+  if (sinEmpresa.length) {
+    return { ok: false, error: `La Org ${sinEmpresa.join(', ')} no tiene empresa asociada (Rack One → Empresas, código SAP).` };
+  }
+
   const items = [];
   const prices = [];
   for (const p of props) {
     const pvp = p.decided_pvp ?? p.proposed_pvp;
     for (const org of useOrgs) {
       items.push({ export_id: exp.id, proposal_id: p.id, generic_code: p.generic_code, sales_org: org, pvp });
-      prices.push({ generic_code: p.generic_code, sales_org: org, pvp, valid_from: validFrom, source: 'proposal' });
+      prices.push({
+        generic_code: p.generic_code,
+        sales_org: org,
+        empresa_id: empresaByOrg.get(org),
+        pvp,
+        valid_from: validFrom,
+        source: 'proposal',
+      });
     }
   }
   const { error: iErr } = await admin.from('price_change_export_items').insert(items);
   if (iErr) return { ok: false, error: iErr.message };
+  // Si ya había un precio para ese genérico/empresa/fecha, el propuesto lo reemplaza.
   const { error: gpErr } = await admin
     .from('generic_prices')
-    .upsert(prices, { onConflict: 'generic_code,sales_org,valid_from', ignoreDuplicates: true });
+    .upsert(prices, { onConflict: 'generic_code,empresa_id,valid_from' });
   if (gpErr) return { ok: false, error: gpErr.message };
 
   const { error: uErr } = await admin

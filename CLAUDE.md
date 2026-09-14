@@ -24,8 +24,11 @@ antes de tocar import/SKU/semana/sync/reportes). Mantenerlos al día al agregar 
   la regla "misma semana" sola dejaba el 100 % de las ventas sin mueble (gotcha #13). El ALMACÉN nunca
   recibe venta. Implementado en `attribute_sales()` (`supabase/migrations/0070_*.sql`).
 - **Almacén deducido** = stock total de la tienda − unidades escaneadas en piso (`store_warehouse()`).
-- **Semana = ISO week** `IYYY-"W"IW` (ej. `2026-W26`). Hay tres implementaciones que DEBEN coincidir:
-  `iso_week()` (SQL), `web/src/lib/week.ts`, `mobile/.../util/IsoWeek.kt`.
+- **Semana = semana COMERCIAL** (domingo→sábado), formato `YYYY-Www` (ej. `2026-W26`), vía
+  `week_calendar` + `comm_week()` (SQL, `0014`). Tres implementaciones que DEBEN coincidir:
+  `comm_week()` (SQL), `web/src/lib/week.ts` (`isoWeek`/`commWeek`), `mobile/.../util/IsoWeek.kt`
+  (el nombre es histórico; ya calcula semana comercial). El trigger `scan_sessions_00_setweek`
+  re-estampa `week` en el servidor, así que el valor del equipo nunca manda.
 - **Sync idempotente** por `client_uid` en `scan_sessions`.
 - **Piso de venta = las ubicaciones (muebles) creadas en la tienda.** Lo escaneado en esos muebles es
   el piso. Cada tienda tiene además una ubicación especial **`ALMACÉN`** (`fixtures.is_warehouse`,

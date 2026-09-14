@@ -109,3 +109,8 @@ Usado en `/alerts` (pestaña Operativas). Base `0008`.
 - `norm_sku(text) → text` — quita ceros a la izquierda en códigos numéricos
   (canoniza SKU). Base `0038`. **Usar al LEER, nunca en trigger de escritura** (gotcha #1).
 - `current_role_name() → text`, `current_store_id() → uuid` — gating de RLS/roles.
+- **Permisos de ejecución (0072):** ninguna función de `public` es ejecutable por `anon`. Las RPC
+  de lectura/reportes tienen EXECUTE para `authenticated` + `service_role`; las de recálculo y
+  triggers (`recompute_*`, `attribute_sales`, `recalc_fixture_metrics`, `apply_stock_snapshot`,
+  `ensure_warehouse_fixture`, …) solo `service_role`. Toda función nueva: `set search_path =
+  public, pg_temp` y revocar `anon` (el linter de Supabase lo marca si falta).

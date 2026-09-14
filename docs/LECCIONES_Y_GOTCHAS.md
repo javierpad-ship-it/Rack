@@ -250,6 +250,39 @@ Editor — verificar con `pg_proc`/`information_schema` antes de asumir que una 
 (`store_alerts`, 0071): la primera corrida encontró RACK 04 (297 u vs 295) y RACK 07 (295 u vs
 103) en Prolongación — la corrección es cambiar esa sesión de `restock` a `audit`.
 
+## #14 — Precios aprobados invisibles en Prisma + RPCs abiertas a `anon`
+
+**Segunda revisión general (sep-2026), migración `0072`.**
+
+**A. Precios por Org vs por empresa.** Desde la 0056 Prisma lee el PVP vigente por **empresa**
+(`generic_price_info_empresa`, `stores.empresa_id`), pero la exportación a SAP seguía grabando
+`generic_prices` con `sales_org` y `empresa_id = NULL`. Resultado: **877 precios aprobados y
+exportados nunca aparecieron en la app** (seguía el PVP viejo) y 25.459 precios históricos por
+Org tampoco. Nadie lo notó porque el flujo "aprobar → exportar" terminaba bien y el archivo SAP
+salía correcto. Fix: backfill de `empresa_id` desde `empresas.codigo_sap` (en conflicto de fecha
+con una fila por empresa, la propuesta gana); `generateExport` graba `empresa_id` y upsertea por
+`(generic_code, empresa_id, valid_from)`. Quedan 32.731 filas por Org sin empresa que ya tienen
+gemela por empresa (inertes). **Regla:** todo lo que escriba `generic_prices` debe llevar
+`empresa_id`; `sales_org` es informativo.
+
+**B. RPCs ejecutables sin sesión.** 36 funciones `SECURITY DEFINER` tenían EXECUTE para `anon`
+y varias no verifican rol adentro (`fixture_floor_vigente`, `store_warehouse`, `scan_coverage`,
+`store_alerts`, `generic_rotation`, `prisma_variant_lookup`): con la anon key y un uuid de tienda
+se leía piso/stock/ventas sin login. Se revocó EXECUTE a `anon`/`public` en todas las funciones
+de `public` (quedan `authenticated` + `service_role`; las de recálculo/triggers solo
+`service_role`) y se fijó `search_path` en las 27 que no lo tenían. **Regla:** toda función
+nueva nace con `set search_path = public, pg_temp` y sin EXECUTE para `anon`.
+
+**C. Doc desactualizada:** CLAUDE.md decía "semana ISO"; el sistema usa semana **comercial**
+(domingo→sábado) en SQL, web y móvil desde la 0014, y el trigger `scan_sessions_00_setweek`
+re-estampa `week` en el servidor. Corregido.
+
+**D. Sin bug pero conviene saber:** `sales_daily` tiene 1.257 filas con unidades negativas
+(devoluciones del POS, −1.280 u); la atribución y el piso las tratan como venta negativa (vuelven
+al mueble), que es lo esperado. Las líneas `CARLA` y `MARTIN` ya no existen en el stock
+(responsables vigentes: `IVETTE`, `KATYA`, `-`); las asignaciones en `user_lines` a esas líneas
+quedaron sin efecto salvo para propuestas viejas.
+
 ## Conector Supabase (operativo, no del producto)
 
 En sesiones de chat el conector MCP a veces figura `enabledInChat: false` (apagado
