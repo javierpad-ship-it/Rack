@@ -50,6 +50,7 @@ begin
     where n.nspname = 'public' and p.prokind = 'f'
       and p.proname in ('recompute_sales_week','recompute_sales_range','attribute_sales',
                         'recalc_fixture_metrics','apply_stock_snapshot','process_sales_daily',
+                        'process_sales_staging','process_stock_staging',
                         'ensure_warehouse_fixture','stores_create_warehouse','handle_new_user',
                         'rls_auto_enable','fixtures_set_code','scan_sessions_set_week',
                         'scan_sessions_replace_dup')
